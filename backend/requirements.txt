@@ -2,8 +2,12 @@ langchain
 langchain-openai
 langchain-community
 langchainhub
+langchain-classic
 requests
 httpx
 python-dotenv
 rich
 pydantic
+fastapi
+uvicorn
+python-multipart

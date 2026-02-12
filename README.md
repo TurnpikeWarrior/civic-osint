@@ -1,32 +1,29 @@
 # COSINT - Congress Open Source Intelligence Tool
 
-COSINT is a terminal-based application that utilizes LangChain and the Congress.gov API to provide information about Congress representatives.
+COSINT is an AI-powered platform for tracking and researching US Congress representatives.
 
-## Setup
+## Project Structure
 
-1. **Clone the repository** (if applicable).
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Set up environment variables**:
-   Create a `.env` file in the root directory and add your API keys:
-   ```env
-   CONGRESS_API_KEY=your_congress_api_key_here
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
-   * Get a Congress API key at [api.congress.gov](https://api.congress.gov/).
-   * Get an OpenAI API key at [platform.openai.com](https://platform.openai.com/).
+- `backend/`: FastAPI server with LangChain agent and Congress API integration.
+- `frontend/`: Next.js web application with a modern chat interface.
 
-## Usage
+## Quick Start
 
-Run the application:
+### 1. Setup Backend
 ```bash
-python main.py
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+# Ensure your .env file is set up with CONGRESS_API_KEY and OPENAI_API_KEY
+python3 -m uvicorn app.main:app --reload
 ```
 
-## Features
+### 2. Setup Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-* **Natural Language Queries**: Ask about representatives by name or state.
-* **Detailed Biographies**: Retrieve specific member details.
-* **Interactive CLI**: Easy-to-use terminal interface with `rich` formatting.
+The application will be available at `http://localhost:3000`.
