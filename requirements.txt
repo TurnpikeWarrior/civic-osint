@@ -1,2 +1,9 @@
- langchain
- python-dotenv
+langchain
+langchain-openai
+langchain-community
+langchainhub
+requests
+httpx
+python-dotenv
+rich
+pydantic
