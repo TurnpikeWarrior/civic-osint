@@ -21,6 +21,8 @@ def run_cli():
         console.print(f"[bold red]Error initializing agent:[/bold red] {e}")
         sys.exit(1)
 
+    chat_history = []
+
     while True:
         try:
             query = Prompt.ask("\n[bold cyan]Query[/bold cyan]")
@@ -33,10 +35,21 @@ def run_cli():
                 continue
 
             with console.status("[bold green]Searching Congress data...[/bold green]"):
-                response = agent_executor.invoke({"input": query})
+                response = agent_executor.invoke({
+                    "input": query,
+                    "chat_history": chat_history
+                })
             
             console.print("\n[bold green]COSINT Response:[/bold green]")
             console.print(response["output"])
+
+            # Update chat history
+            chat_history.append(("human", query))
+            chat_history.append(("assistant", response["output"]))
+            
+            # Keep history manageable (last 10 interactions)
+            if len(chat_history) > 20:
+                chat_history = chat_history[-20:]
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Goodbye![/yellow]")

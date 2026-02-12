@@ -23,13 +23,15 @@ class CongressAPIClient:
         response.raise_for_status()
         return response.json()
 
-    def get_members(self, current_member: bool = True, limit: int = 20) -> List[Dict[str, Any]]:
+    def get_members(self, current_member: bool = True, limit: int = 20, state: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Fetch a list of members.
+        Fetch a list of members, optionally filtered by state.
         """
         params = {"limit": limit}
         if current_member:
             params["currentMember"] = "true"
+        if state:
+            params["state"] = state
         
         data = self._get("member", params=params)
         return data.get("members", [])
@@ -40,6 +42,14 @@ class CongressAPIClient:
         """
         data = self._get(f"member/{bioguide_id}")
         return data.get("member", {})
+
+    def get_sponsored_legislation(self, bioguide_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Fetch legislation sponsored by a specific member.
+        """
+        params = {"limit": limit}
+        data = self._get(f"member/{bioguide_id}/sponsored-legislation", params=params)
+        return data.get("sponsoredLegislation", [])
 
     def search_member_by_name(self, name: str) -> Optional[Dict[str, Any]]:
         """
