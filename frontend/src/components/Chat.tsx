@@ -154,6 +154,7 @@ export default function Chat({
       let assistantContent = '';
       
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+      const processedPackets = new Set<string>();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -162,34 +163,32 @@ export default function Chat({
         const chunk = decoder.decode(value, { stream: true });
         assistantContent += chunk;
 
-        // CHECK FOR INTEL PACKETS: Format: [INTEL_PACKET: Title | Content]
-        const intelMatch = assistantContent.match(/\[INTEL_PACKET:\s*([^|]+)\|\s*([^\]]+)\]/);
-        if (intelMatch && onIntelligenceCaptured) {
-          onIntelligenceCaptured({
-            title: intelMatch[1].trim(),
-            content: intelMatch[2].trim()
-          });
-          // Hide the packet tag from the UI chat bubble for a cleaner look
-          const cleanedContent = assistantContent.replace(/\[INTEL_PACKET:[^\]]+\]/g, '').trim();
-          
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1] = {
-              role: 'assistant',
-              content: cleanedContent,
-            };
-            return newMessages;
-          });
-        } else {
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1] = {
-              role: 'assistant',
-              content: assistantContent,
-            };
-            return newMessages;
-          });
+        // CHECK FOR INTEL PACKETS: Format: [INTEL_PACKET: Title | Content |END_PACKET]
+        // We use a unique terminator to allow brackets (links) inside the content
+        const allMatches = Array.from(assistantContent.matchAll(/\[INTEL_PACKET:\s*([^|]+)\|\s*([\s\S]*?)\|END_PACKET\]/g));
+        
+        for (const match of allMatches) {
+          const fullTag = match[0];
+          if (!processedPackets.has(fullTag) && onIntelligenceCaptured) {
+            processedPackets.add(fullTag);
+            onIntelligenceCaptured({
+              title: match[1].trim(),
+              content: match[2].trim()
+            });
+          }
         }
+
+        // Hide any intel tags from the UI chat bubble
+        const cleanedContent = assistantContent.replace(/\[INTEL_PACKET:[\s\S]*?\|END_PACKET\]/g, '').trim();
+        
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = {
+            role: 'assistant',
+            content: cleanedContent,
+          };
+          return newMessages;
+        });
       }
     } catch (error: any) {
       setMessages((prev) => [

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Chat from '@/components/Chat';
@@ -30,6 +30,11 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const [researchNotes, setResearchNotes] = useState<any[]>([]);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: '', content: '' });
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedNoteIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const fetchNotes = async () => {
     try {
@@ -48,7 +53,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
 
   const fetchMemberConversation = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       const response = await fetch(`http://localhost:8000/conversations/member/${bioguideId}`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -120,6 +125,100 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const startEditing = (note: any) => {
     setEditingNoteId(note.id);
     setEditForm({ title: note.title, content: note.content });
+  };
+
+  const ResearchNoteCard = ({ note }: { note: any }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (contentRef.current) {
+        const { scrollHeight, clientHeight } = contentRef.current;
+        setIsOverflowing(scrollHeight > clientHeight);
+      }
+    }, [note.content]);
+
+    return (
+      <div className="bg-white p-2 px-4 rounded-lg shadow-sm border border-gray-100 transition-all hover:border-blue-200 group focus-within:ring-1 focus-ring-blue-500 relative text-black">
+        {editingNoteId === note.id ? (
+          <div className="flex flex-col gap-2 w-full py-1">
+            <input 
+              value={editForm.title}
+              onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+              className="text-xs font-black border-b border-blue-600 outline-none pb-0.5 uppercase tracking-widest bg-transparent w-full text-black"
+            />
+            <textarea 
+              value={editForm.content}
+              onChange={(e) => setEditForm({...editForm, content: e.target.value})}
+              className="w-full text-sm font-medium border border-gray-100 p-2 rounded-lg outline-none min-h-[60px] bg-gray-50 text-black"
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setEditingNoteId(null)} className="px-2 py-1 text-[10px] font-black uppercase text-gray-400 hover:text-black focus:outline-none">Cancel</button>
+              <button onClick={() => handleUpdateNote(note.id)} className="px-3 py-1 text-[10px] font-black uppercase bg-blue-600 text-white rounded-lg shadow-md focus:ring-2 focus:ring-blue-400 outline-none">Save</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-start mb-0.5">
+              <h3 className="text-xs font-black text-blue-700 uppercase tracking-wider">
+                {note.title}
+              </h3>
+              
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => startEditing(note)}
+                  className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors outline-none focus:ring-1 focus:ring-blue-500"
+                  title="Edit"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                <button 
+                  onClick={() => handleDeleteNote(note.id)}
+                  className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition-colors outline-none focus:ring-1 focus:ring-red-500"
+                  title="Delete"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div 
+              ref={contentRef}
+              className={`text-sm text-black font-medium leading-tight prose prose-sm max-w-none prose-p:my-0 prose-headings:text-black prose-strong:text-black transition-all duration-300 ${!isExpanded ? 'line-clamp-4' : ''}`}
+            >
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ node, ...props }) => (
+                    <a 
+                      {...props} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-700 underline decoration-2 underline-offset-4 font-black hover:text-blue-900 transition-colors"
+                    />
+                  ),
+                }}
+              >
+                {note.content}
+              </ReactMarkdown>
+            </div>
+
+            {isOverflowing && (
+              <div className="flex justify-end mt-1">
+                <button 
+                  onClick={() => setIsExpanded(!isExpanded)} 
+                  className="text-[10px] font-black text-blue-700 uppercase tracking-widest hover:text-blue-900 transition-colors focus:ring-1 focus:ring-blue-500 rounded px-1 outline-none"
+                  aria-expanded={isExpanded}
+                >
+                  {isExpanded ? "Collapse -" : "Expand +"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -244,57 +343,9 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
               Research Notebook
             </h2>
             {researchNotes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-left-4 duration-500">
-                {researchNotes.map((note, index) => (
-                  <div key={note.id || index} className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 transition-all hover:border-blue-300 group focus-within:ring-2 focus-ring-blue-500 relative">
-                    
-                    {/* Note Content / Edit Form */}
-                    {editingNoteId === note.id ? (
-                      <div className="space-y-4">
-                        <input 
-                          value={editForm.title}
-                          onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                          className="w-full text-sm font-black border-b-2 border-blue-600 outline-none pb-1 uppercase tracking-widest"
-                        />
-                        <textarea 
-                          value={editForm.content}
-                          onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                          className="w-full text-base font-medium border border-gray-100 p-2 rounded-lg outline-none min-h-[100px]"
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <button onClick={() => setEditingNoteId(null)} className="px-3 py-1 text-[10px] font-black uppercase text-gray-400 hover:text-black">Cancel</button>
-                          <button onClick={() => handleUpdateNote(note.id)} className="px-3 py-1 text-[10px] font-black uppercase bg-blue-600 text-white rounded-lg">Save Changes</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Hover Actions */}
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => startEditing(note)}
-                            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Edit finding"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteNote(note.id)}
-                            className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete finding"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                          </button>
-                        </div>
-
-                        <h3 className="text-xs font-black text-black uppercase tracking-widest mb-3 pr-16">
-                          {note.title}
-                        </h3>
-                        <div className="text-base text-gray-900 font-medium leading-relaxed prose prose-sm max-w-none prose-headings:text-black prose-strong:text-black">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
-                        </div>
-                      </>
-                    )}
-                  </div>
+              <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-left-4 duration-500">
+                {researchNotes.map((note) => (
+                  <ResearchNoteCard key={note.id} note={note} />
                 ))}
               </div>
             ) : (
@@ -340,13 +391,13 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
                     <p className="text-lg font-bold text-black leading-tight mb-6 group-hover:translate-x-1 transition-transform">{v.question}</p>
                     <div className="grid grid-cols-2 gap-10">
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] uppercase font-black text-gray-600 tracking-wider">Representative Vote</span>
-                        <span className={`text-2xl font-black ${v.vote === 'Yea' ? 'text-green-800' : v.vote === 'Nay' ? 'text-red-800' : 'text-gray-700'}`}>
+                        <span className="text-[10px] uppercase font-black text-gray-500 tracking-wider">Representative Vote</span>
+                        <span className={`text-2xl font-black ${v.vote === 'Yea' ? 'text-green-700' : v.vote === 'Nay' ? 'text-red-700' : 'text-gray-600'}`}>
                           {v.vote.toUpperCase()}
                         </span>
                       </div>
                       <div className="flex flex-col gap-1 border-l border-gray-200 pl-10">
-                        <span className="text-[10px] uppercase font-black text-gray-600 tracking-wider">Final Outcome</span>
+                        <span className="text-[10px] uppercase font-black text-gray-500 tracking-wider">Final Outcome</span>
                         <span className="text-2xl font-black text-black uppercase">{v.result}</span>
                       </div>
                     </div>
