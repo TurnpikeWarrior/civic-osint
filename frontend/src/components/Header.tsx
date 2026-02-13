@@ -24,13 +24,13 @@ export default function Header({ user, onSignOut }: HeaderProps) {
 
       <div className="flex items-center gap-4">
         <div className="hidden md:flex flex-col items-end">
-          <span className="text-xs font-bold text-black uppercase tracking-widest leading-none mb-1">Authenticated Terminal</span>
-          <span className="text-[10px] text-gray-500 font-mono">{user.email}</span>
+          <span className="text-[10px] font-black text-black uppercase tracking-[0.2em] leading-none mb-1">Authenticated Terminal</span>
+          <span className="text-xs text-gray-700 font-bold font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100">{user.email}</span>
         </div>
-        <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden md:block"></div>
+        <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden md:block" aria-hidden="true"></div>
         <button
           onClick={onSignOut}
-          className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-500 hover:text-red-600 transition-colors border border-gray-200 rounded-lg hover:border-red-100 hover:bg-red-50"
+          className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:text-red-700 transition-colors border border-gray-300 rounded-lg hover:border-red-200 hover:bg-red-50 focus:ring-2 focus:ring-blue-500 outline-none"
         >
           Logout
         </button>

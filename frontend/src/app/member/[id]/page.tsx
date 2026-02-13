@@ -4,6 +4,8 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Chat from '@/components/Chat';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
@@ -25,6 +27,14 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [convId, setConvId] = useState<string | null>(null);
+  const [researchNotes, setResearchNotes] = useState<{title: string, content: string}[]>([]);
+
+  const captureIntel = (intel: {title: string, content: string}) => {
+    setResearchNotes(prev => {
+      if (prev.some(n => n.title === intel.title)) return prev;
+      return [...prev, intel];
+    });
+  };
 
   useEffect(() => {
     async function init() {
@@ -52,18 +62,18 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   };
 
   if (isLoading || !user) return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <div className="flex min-h-screen items-center justify-center bg-white" aria-busy="true" aria-label="Loading intelligence data">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
     </div>
   );
 
   if (error || !data) return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
       <Header user={user} onSignOut={handleSignOut} />
-      <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md border">
-        <h2 className="text-2xl font-black text-red-600 mb-4 uppercase tracking-tighter">System Error</h2>
-        <p className="text-gray-600 mb-6 font-medium">{error || "Could not retrieve representative intelligence."}</p>
-        <Link href="/" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95">
+      <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md border border-gray-200">
+        <h2 className="text-2xl font-black text-red-700 mb-4 uppercase tracking-tighter">System Error</h2>
+        <p className="text-gray-800 mb-6 font-medium">{error || "Could not retrieve representative intelligence."}</p>
+        <Link href="/" className="bg-blue-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-800 transition-all shadow-md active:scale-95 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
           Return to Terminal
         </Link>
       </div>
@@ -73,147 +83,178 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const { details, bills, votes } = data;
 
   return (
-    <div className="min-h-screen bg-white pb-24 font-sans selection:bg-blue-100 text-black">
+    <div className="min-h-screen bg-white pb-12 font-sans selection:bg-blue-100 text-black">
       <Header user={user} onSignOut={handleSignOut} />
 
-      {/* Hero Section */}
-      <div className="bg-blue-600 pt-32 pb-16 text-white overflow-hidden relative shadow-2xl">
-        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-          <div className="text-9xl font-black tracking-tighter">COSINT</div>
-        </div>
-        <div className="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row items-center gap-10 relative z-10">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-white rounded-3xl rotate-3 scale-105 opacity-20 group-hover:rotate-6 transition-transform duration-500"></div>
+      {/* Optimized Horizontal Hero Section - WCAG Compliant */}
+      <div className="pt-24 pb-8 border-b border-gray-200 bg-white">
+        <div className="container mx-auto px-6 max-w-7xl flex flex-col md:flex-row items-center gap-10">
+          {/* Profile Image */}
+          <div className="relative shrink-0">
             {details.depiction?.imageUrl ? (
               <img 
                 src={details.depiction.imageUrl} 
-                alt={details.directOrderName}
-                className="w-48 h-48 rounded-2xl border-4 border-white shadow-2xl relative z-10 bg-gray-100 object-cover"
+                alt={`Official portrait of ${details.directOrderName}`}
+                className="w-36 h-36 rounded-2xl border border-gray-300 shadow-md object-cover bg-gray-50"
               />
             ) : (
-              <div className="w-48 h-48 rounded-2xl border-4 border-white shadow-2xl relative z-10 bg-blue-800 flex items-center justify-center text-6xl font-black">
+              <div className="w-36 h-36 rounded-2xl border border-gray-300 shadow-md bg-blue-50 flex items-center justify-center text-5xl font-black text-blue-700" aria-hidden="true">
                 {details.lastName?.charAt(0)}
               </div>
             )}
           </div>
-          <div className="text-center md:text-left flex-1 space-y-4">
+
+          {/* Core Info */}
+          <div className="flex-1 space-y-4 text-center md:text-left">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm ${
-                details.partyHistory?.[0]?.partyName === 'Republican' ? 'bg-red-500' : 'bg-blue-500'
-              } border border-white/20`}>
-                {details.partyHistory?.[0]?.partyName}
+              <span className={`px-3 py-1 rounded text-xs font-black uppercase tracking-wider ${
+                details.partyHistory?.[0]?.partyAbbreviation === 'R' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-blue-100 text-blue-800 border border-blue-200'
+              }`}>
+                {details.partyHistory?.[0]?.partyName || 'Unknown Party'}
               </span>
-              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[10px] font-black uppercase tracking-[0.2em]">
+              <span className="px-3 py-1 rounded bg-gray-100 border border-gray-200 text-xs font-black uppercase tracking-wider text-gray-700">
                 {details.state} {details.terms?.[0]?.district ? `District ${details.terms[0].district}` : 'Senator'}
               </span>
+              <span className="px-3 py-1 rounded bg-green-100 border border-green-200 text-xs font-black uppercase tracking-wider text-green-800">
+                {details.terms?.[details.terms.length - 1]?.congress}th Congress
+              </span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-none">{details.directOrderName}</h1>
-            <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
-              <a href={details.officialWebsiteUrl} target="_blank" rel="noreferrer" className="bg-white text-blue-600 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-gray-100 transition-all shadow-lg active:scale-95">
-                Official Web
+            
+            <h1 className="text-5xl font-black tracking-tight leading-none text-black">
+              {details.directOrderName}
+            </h1>
+
+            <div className="flex flex-wrap gap-4 justify-center md:justify-start items-center text-sm font-semibold">
+              <a href={details.officialWebsiteUrl} target="_blank" rel="noreferrer" className="text-blue-700 hover:text-blue-900 underline focus:ring-2 focus:ring-blue-500 rounded px-1">
+                Official Website
               </a>
-              <Link href="/" className="bg-blue-700 text-white border border-white/30 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-blue-800 transition-all active:scale-95">
-                New Inquiry
-              </Link>
+              <span className="text-gray-400" aria-hidden="true">|</span>
+              <span className="text-gray-700">
+                HQ: {details.addressInformation?.officeAddress || 'N/A'}
+              </span>
+              <span className="text-gray-400" aria-hidden="true">|</span>
+              <span className="text-gray-700">
+                PH: {details.addressInformation?.phoneNumber || 'N/A'}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-6 max-w-6xl -mt-10 grid grid-cols-1 lg:grid-cols-4 gap-10 relative z-20">
-        {/* Info Sidebar */}
-        <section className="lg:col-span-1 space-y-8">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100">
-            <h2 className="text-xs font-black text-blue-600 uppercase tracking-[0.3em] mb-8 border-b border-gray-100 pb-2">Intelligence Profile</h2>
-            <dl className="space-y-8">
-              <div className="group">
-                <dt className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Birth Date</dt>
-                <dd className="text-black text-xl font-bold group-hover:text-blue-600 transition-colors">{details.birthYear || 'Unknown'}</dd>
-              </div>
-              <div className="group">
-                <dt className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Current Congress</dt>
-                <dd className="text-black text-xl font-bold group-hover:text-blue-600 transition-colors">{details.terms?.[details.terms.length - 1]?.congress}th</dd>
-              </div>
-              <div className="group">
-                <dt className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">HQ Location</dt>
-                <dd className="text-black text-sm font-bold leading-tight group-hover:text-blue-600 transition-colors">{details.addressInformation?.officeAddress || 'Information Withheld'}</dd>
-              </div>
-              <div className="group">
-                <dt className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Secure Line</dt>
-                <dd className="text-black text-xl font-bold group-hover:text-blue-600 transition-colors">{details.addressInformation?.phoneNumber || 'N/A'}</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-
-        {/* Intelligence Data */}
-        <div className="lg:col-span-3 space-y-12">
-          {/* Voting Ledger */}
-          <section className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
-            <div className="px-8 py-6 bg-gray-50 border-b flex justify-between items-center">
-              <h2 className="text-sm font-black text-black uppercase tracking-[0.2em]">Voting Ledger</h2>
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">Real-time Data</span>
-            </div>
-            <div className="divide-y border-gray-50">
-              {votes.length > 0 ? votes.map((v, i) => (
-                <div key={i} className="p-8 hover:bg-gray-50/50 transition-all group">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg uppercase tracking-widest">
-                      Doc: {v.legislation}
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-400 font-mono">
-                      {new Date(v.date).toISOString().split('T')[0]}
-                    </span>
-                  </div>
-                  <p className="text-black text-base font-bold mb-6 leading-tight group-hover:translate-x-1 transition-transform">{v.question}</p>
-                  <div className="flex gap-12">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] uppercase font-black text-gray-400 tracking-tighter">Vote Cast</span>
-                      <span className={`text-xl font-black ${v.vote === 'Yea' ? 'text-green-600' : v.vote === 'Nay' ? 'text-red-600' : 'text-gray-400'}`}>
-                        {v.vote.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1 border-l border-gray-100 pl-12">
-                      <span className="text-[9px] uppercase font-black text-gray-400 tracking-tighter">Legislation Status</span>
-                      <span className="text-xl font-black text-black uppercase">{v.result}</span>
+      <main className="container mx-auto px-6 max-w-7xl mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        {/* Left Column: Research Notebook & Voting Ledger */}
+        <div className="lg:col-span-8 space-y-12">
+          {/* Research Notebook */}
+          <section aria-labelledby="notebook-title">
+            <h2 id="notebook-title" className="text-xs font-black text-blue-700 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-700 rounded-full"></span>
+              Research Notebook
+            </h2>
+            {researchNotes.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-left-4 duration-500">
+                {researchNotes.map((note, index) => (
+                  <div key={index} className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 transition-all hover:border-blue-300 group focus-within:ring-2 focus-ring-blue-500">
+                    <h3 className="text-sm font-black text-black uppercase tracking-widest mb-3 flex justify-between">
+                      {note.title}
+                      <span className="text-gray-400">#0{index + 1}</span>
+                    </h3>
+                    <div className="text-base text-gray-900 font-medium leading-relaxed prose prose-sm max-w-none prose-headings:text-black prose-strong:text-black">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
                     </div>
                   </div>
-                </div>
-              )) : (
-                <p className="p-12 text-gray-400 text-sm font-bold uppercase tracking-widest text-center italic">No ledger entries detected.</p>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-3xl p-16 text-center">
+                <p className="text-base font-bold text-gray-500 uppercase tracking-widest">Awaiting Chat Intelligence to Populate Notebook</p>
+                <p className="text-sm text-gray-500 mt-2">Ask questions in the terminal to pin modular data here</p>
+              </div>
+            )}
           </section>
 
-          {/* Legislative Sponsorships */}
-          <section className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
-            <div className="px-8 py-6 bg-gray-50 border-b flex justify-between items-center">
-              <h2 className="text-sm font-black text-black uppercase tracking-[0.2em]">Sponsorship Registry</h2>
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">10 Entry Log</span>
+          {/* Voting Ledger */}
+          <section aria-labelledby="voting-title">
+            <div className="flex justify-between items-center mb-6">
+              <h2 id="voting-title" className="text-xs font-black text-black uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="w-2 h-2 bg-black rounded-full"></span>
+                Voting Ledger
+              </h2>
+              <span className="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">Official Roll Call</span>
             </div>
-            <div className="divide-y border-gray-50">
-              {bills.length > 0 ? bills.map((bill, i) => (
-                <div key={i} className="p-8 hover:bg-gray-50/50 transition-all">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                      {bill.type}{bill.number}
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">
-                      Inbound: {bill.introducedDate}
-                    </span>
-                  </div>
-                  <p className="text-black text-base font-bold mb-6 leading-tight">{bill.title}</p>
-                  {bill.latestAction && (
-                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50 relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
-                      <span className="text-[9px] uppercase font-black text-blue-600 block mb-1 tracking-widest">Latest Transmission</span>
-                      <p className="text-xs text-black font-medium leading-relaxed">{bill.latestAction.text}</p>
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {votes.length > 0 ? votes.map((v, i) => (
+                  <div key={i} className="p-8 hover:bg-gray-50/50 transition-all group">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black text-blue-700 uppercase tracking-[0.2em]">Legislation Record</span>
+                        {v.legislationUrl ? (
+                          <a href={v.legislationUrl} target="_blank" rel="noreferrer" className="text-xl font-black text-blue-700 hover:text-blue-900 underline underline-offset-4">
+                            {v.legislation}
+                          </a>
+                        ) : (
+                          <span className="text-xl font-black text-black">{v.legislation}</span>
+                        )}
+                      </div>
+                      <time className="text-xs font-bold text-gray-500 font-mono bg-gray-100 px-3 py-1 rounded-full">
+                        {new Date(v.date).toISOString().split('T')[0]}
+                      </time>
                     </div>
-                  )}
-                </div>
-              )) : (
-                <p className="p-12 text-gray-400 text-sm font-bold uppercase tracking-widest text-center italic">No active registries found.</p>
-              )}
+                    <p className="text-lg font-bold text-black leading-tight mb-6 group-hover:translate-x-1 transition-transform">{v.question}</p>
+                    <div className="grid grid-cols-2 gap-10">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase font-black text-gray-500 tracking-wider">Representative Vote</span>
+                        <span className={`text-2xl font-black ${v.vote === 'Yea' ? 'text-green-700' : v.vote === 'Nay' ? 'text-red-700' : 'text-gray-600'}`}>
+                          {v.vote.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1 border-l border-gray-200 pl-10">
+                        <span className="text-[10px] uppercase font-black text-gray-500 tracking-wider">Final Outcome</span>
+                        <span className="text-2xl font-black text-black uppercase">{v.result}</span>
+                      </div>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="p-16 text-gray-500 text-sm font-bold uppercase tracking-widest text-center italic">No ledger entries detected.</p>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column: Sponsorship Registry - Optimized Contrast & Size */}
+        <div className="lg:col-span-4">
+          <section aria-labelledby="registry-title" className="sticky top-24">
+            <h2 id="registry-title" className="text-xs font-black text-black uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-black rounded-full"></span>
+              Sponsorship Registry
+            </h2>
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {bills.length > 0 ? bills.map((bill, i) => (
+                  <div key={i} className="p-6 hover:bg-gray-50/50 transition-all">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                        {bill.type}{bill.number}
+                      </span>
+                      <time className="text-[10px] font-bold text-gray-600 uppercase">
+                        Introduced: {bill.introducedDate}
+                      </time>
+                    </div>
+                    <p className="text-sm font-bold text-black leading-snug mb-4">{bill.title}</p>
+                    {bill.latestAction && (
+                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-700"></div>
+                        <span className="text-[9px] uppercase font-black text-blue-800 block mb-1 tracking-widest">Status Update</span>
+                        <p className="text-xs text-gray-900 font-semibold leading-relaxed">{bill.latestAction.text}</p>
+                      </div>
+                    )}
+                  </div>
+                )) : (
+                  <p className="p-12 text-gray-500 text-sm font-bold uppercase tracking-widest text-center italic">No active registries found.</p>
+                )}
+              </div>
             </div>
           </section>
         </div>
@@ -225,7 +266,8 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
         conversationId={convId}
         onIdGenerated={setConvId}
         user={user}
-        initialContext={`The user is currently viewing the profile of ${details.directOrderName}.`}
+        initialContext={`The user is currently viewing the profile of ${details.directOrderName} (Bioguide ID: ${bioguideId}). Use this Bioguide ID directly for tools if needed.`}
+        onIntelligenceCaptured={captureIntel}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -21,50 +22,90 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-        <div className="bg-blue-600 p-8 text-center text-white">
-          <h1 className="text-3xl font-black tracking-tighter">COSINT</h1>
-          <p className="mt-2 text-blue-100 text-sm font-medium uppercase tracking-widest">
-            Intelligence Access Terminal
-          </p>
+    <div className="min-h-screen bg-white flex flex-col font-sans selection:bg-blue-100 text-black">
+      {/* Public Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between z-50">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center font-black text-white text-xl shadow-inner" aria-hidden="true">
+            C
+          </div>
+          <span className="text-lg font-extrabold tracking-tight text-black uppercase tracking-wider">
+            COSINT
+          </span>
         </div>
-        
-        <div className="p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-black">Sign In</h2>
-            <p className="text-sm text-gray-500">Access your private briefings and intelligence reports.</p>
+        <div>
+          <span className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">Secure Access Required</span>
+        </div>
+      </header>
+
+      <main className="flex-1 flex flex-col items-center justify-center p-6 pt-32 pb-12 relative overflow-hidden">
+        {/* Abstract Background depth */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.03]" aria-hidden="true">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[40vw] font-black tracking-tighter text-blue-900 select-none">
+            INTEL
+          </div>
+        </div>
+
+        <div className="z-10 w-full max-w-4xl flex flex-col items-center gap-12">
+          {/* Headline from User Image */}
+          <div className="text-center space-y-6">
+            <h2 className="text-6xl md:text-8xl font-black text-black tracking-tighter leading-none">
+              Strategic <span className="text-blue-700">Intel.</span>
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto font-bold leading-relaxed tracking-tight">
+              A high-precision terminal for real-time Congressional oversight, voting records, and localized intelligence.
+            </p>
           </div>
 
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center">
-              {error}
+          {/* Login Card */}
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.1)] overflow-hidden border border-gray-200 transition-all hover:shadow-[0_30px_120px_rgba(0,0,0,0.15)]">
+            <div className="p-10 space-y-8">
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-black text-black tracking-tight uppercase">Authentication</h3>
+                <p className="text-sm text-gray-700 font-bold">Please verify your credentials to enter the terminal.</p>
+              </div>
+
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-black rounded-xl text-center uppercase tracking-widest" role="alert">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <button
+                  onClick={() => handleOAuthLogin('google')}
+                  className="w-full flex items-center justify-center gap-4 px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl text-black font-black uppercase tracking-widest text-xs hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm active:scale-95"
+                  aria-label="Continue with Google authentication"
+                >
+                  <img src="https://www.google.com/favicon.ico" alt="" className="w-5 h-5" aria-hidden="true" />
+                  Continue with Google
+                </button>
+
+                <button
+                  onClick={() => handleOAuthLogin('github')}
+                  className="w-full flex items-center justify-center gap-4 px-6 py-4 bg-[#171717] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-xl active:scale-95"
+                  aria-label="Continue with GitHub authentication"
+                >
+                  <img src="https://github.com/favicon.ico" alt="" className="w-5 h-5 invert" aria-hidden="true" />
+                  Continue with GitHub
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 text-center">
+                <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em]">
+                  Federal Intelligence Access Protocol Active
+                </p>
+              </div>
             </div>
-          )}
-
-          <div className="space-y-3">
-            <button
-              onClick={() => handleOAuthLogin('google')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 rounded-xl text-black font-bold hover:bg-gray-50 transition-all shadow-sm"
-            >
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              Continue with Google
-            </button>
-
-            <button
-              onClick={() => handleOAuthLogin('github')}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#24292e] text-white rounded-xl font-bold hover:bg-[#1b1f23] transition-all shadow-md"
-            >
-              <img src="https://github.com/favicon.ico" alt="GitHub" className="w-5 h-5 invert" />
-              Continue with GitHub
-            </button>
           </div>
-
-          <p className="text-[10px] text-gray-400 text-center uppercase tracking-tighter pt-4">
-            By accessing this system, you agree to our Terms of Intelligence & Data Usage.
-          </p>
         </div>
-      </div>
+      </main>
+
+      <footer className="py-8 text-center">
+        <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.4em]">
+          Cosint Terminal &bull; Secure Encrypted Session
+        </p>
+      </footer>
     </div>
   );
 }
