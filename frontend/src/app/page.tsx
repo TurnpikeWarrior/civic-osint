@@ -1,16 +1,38 @@
+'use client';
+
+import { useState } from 'react';
 import Chat from '@/components/Chat';
+import Sidebar from '@/components/Sidebar';
 
 export default function Home() {
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
+  const handleSelectConversation = (id: string) => {
+    setCurrentConversationId(id);
+  };
+
+  const handleNewChat = () => {
+    setCurrentConversationId(null);
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gray-100">
-      <div className="z-10 w-full max-w-5xl items-center justify-center font-sans text-sm flex flex-col gap-8">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-black">
-          Welcome to <span className="text-blue-600">COSINT</span>
-        </h1>
-        <p className="text-xl text-black max-w-2xl text-center">
-          Intelligence on your representatives, powered by AI and the official Congress API.
-        </p>
-        <Chat />
+    <main className="flex h-screen bg-gray-100 overflow-hidden">
+      {/* Sidebar for History */}
+      <Sidebar 
+        currentId={currentConversationId} 
+        onSelect={handleSelectConversation}
+        onNewChat={handleNewChat}
+      />
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col items-center justify-center relative">
+        <div className="absolute top-8 text-center pointer-events-none z-0 opacity-10">
+          <h1 className="text-9xl font-black text-blue-600">COSINT</h1>
+        </div>
+        <Chat 
+          conversationId={currentConversationId} 
+          onIdGenerated={setCurrentConversationId}
+        />
       </div>
     </main>
   );
