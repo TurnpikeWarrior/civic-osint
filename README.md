@@ -1,4 +1,4 @@
-# COSINT - Congress Open Source Intelligence Tool
+# COSINT - Civic Open Source Intelligence Tool
 
 COSINT is an AI-powered platform for tracking and researching US Congress representatives.
 
