@@ -10,12 +10,9 @@ import remarkGfm from 'remark-gfm';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
-
-type MemberData = {
-  details: any;
-  bills: any[];
-  votes: any[];
-};
+import { MemberData } from '@/types';
+import { getApiUrl } from '@/utils/api';
+import { Skeleton, MemberHeaderSkeleton, CardSkeleton, VoteCardSkeleton } from '@/components/Skeleton';
 
 export default function MemberDashboard({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -42,7 +39,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const fetchNotes = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:8000/member/${bioguideId}/notes`, {
+      const response = await fetch(getApiUrl(`/member/${bioguideId}/notes`), {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (response.ok) {
@@ -57,7 +54,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const fetchMemberConversation = async () => {
     try {
       const { data: { session } } = await createClient().auth.getSession();
-      const response = await fetch(`http://localhost:8000/conversations/member/${bioguideId}`, {
+      const response = await fetch(getApiUrl(`/conversations/member/${bioguideId}`), {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (response.ok) {
@@ -75,7 +72,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
     setIsTracking(true);
     try {
       const { data: { session } } = await createClient().auth.getSession();
-      const response = await fetch(`http://localhost:8000/conversations/member/${bioguideId}?name=${encodeURIComponent(data?.details?.directOrderName || '')}`, {
+      const response = await fetch(getApiUrl(`/conversations/member/${bioguideId}?name=${encodeURIComponent(data?.details?.directOrderName || '')}`), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -96,7 +93,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const captureIntel = async (intel: {title: string, content: string}) => {
     try {
       const { data: { session } } = await createClient().auth.getSession();
-      const response = await fetch(`http://localhost:8000/member/${bioguideId}/notes`, {
+      const response = await fetch(getApiUrl(`/member/${bioguideId}/notes`), {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${session?.access_token}`,
@@ -116,7 +113,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const handleDeleteNote = async (noteId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:8000/notes/${noteId}`, {
+      const response = await fetch(getApiUrl(`/notes/${noteId}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -131,7 +128,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const handleUpdateNote = async (noteId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:8000/notes/${noteId}`, {
+      const response = await fetch(getApiUrl(`/notes/${noteId}`), {
         method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${session?.access_token}`,
@@ -255,7 +252,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
       setUser(user);
       
       try {
-        const response = await fetch(`http://localhost:8000/member/${bioguideId}`);
+        const response = await fetch(getApiUrl(`/member/${bioguideId}`));
         if (!response.ok) throw new Error('Failed to fetch representative details');
         const result = await response.json();
         setData(result);
@@ -301,9 +298,36 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
 
   const mainContent = () => {
     if (isLoading || !user) return (
-      <div className="flex flex-1 items-center justify-center bg-white" aria-busy="true" aria-label="Loading intelligence data">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-      </div>
+      <main className="flex-1 overflow-y-auto bg-white py-12 animate-in fade-in duration-500">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <MemberHeaderSkeleton />
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10 pb-24">
+            <div className="lg:col-span-8 space-y-12">
+              <section>
+                <Skeleton className="w-48 h-8 mb-6 rounded-xl" />
+                <div className="space-y-4">
+                  <Skeleton className="w-full h-24 rounded-2xl" />
+                  <Skeleton className="w-full h-24 rounded-2xl" />
+                </div>
+              </section>
+              <section>
+                <Skeleton className="w-48 h-8 mb-6 rounded-xl" />
+                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
+                  {[1, 2, 3].map((i) => <VoteCardSkeleton key={i} />)}
+                </div>
+              </section>
+            </div>
+            <div className="lg:col-span-4 space-y-12">
+              <section>
+                <Skeleton className="w-48 h-8 mb-6 rounded-xl" />
+                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
+                  {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </main>
     );
 
     if (error || !data) return (

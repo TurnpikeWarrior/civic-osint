@@ -10,14 +10,9 @@ import remarkGfm from 'remark-gfm';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
-
-type BillData = {
-  details: any;
-  actions: any[];
-  cosponsors: any[];
-  text: any[];
-  ai_summary?: string;
-};
+import { BillData } from '@/types';
+import { getApiUrl } from '@/utils/api';
+import { Skeleton, CardSkeleton } from '@/components/Skeleton';
 
 export default function BillDashboard({ params }: { params: Promise<{ congress: string, type: string, number: string }> }) {
   const resolvedParams = use(params);
@@ -36,7 +31,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
   const fetchTrackingStatus = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('http://localhost:8000/tracked-bills', {
+      const response = await fetch(getApiUrl('/tracked-bills'), {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (response.ok) {
@@ -57,7 +52,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
       
       try {
         const sanitizedType = type.replace(/[^a-zA-Z]/g, '').toLowerCase();
-        const response = await fetch(`http://localhost:8000/bill/${congress}/${sanitizedType}/${number}`);
+        const response = await fetch(getApiUrl(`/bill/${congress}/${sanitizedType}/${number}`));
         if (!response.ok) throw new Error('Failed to fetch bill intelligence');
         const result = await response.json();
         setData(result);
@@ -80,7 +75,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
     setIsTracking(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('http://localhost:8000/tracked-bills', {
+      const response = await fetch(getApiUrl('/tracked-bills'), {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${session?.access_token}`,
@@ -125,9 +120,42 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
 
   const mainContent = () => {
     if (isLoading || !user) return (
-      <div className="flex flex-1 items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-      </div>
+      <main className="flex-1 overflow-y-auto bg-white py-12 animate-in fade-in duration-500">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="pb-8 border-b border-gray-200 space-y-6">
+            <div className="flex gap-3">
+              <Skeleton className="w-20 h-6 rounded" />
+              <Skeleton className="w-24 h-6 rounded" />
+              <Skeleton className="w-32 h-6 rounded" />
+            </div>
+            <Skeleton className="w-full max-w-2xl h-12" />
+            <div className="flex gap-6">
+              <Skeleton className="w-48 h-4" />
+              <Skeleton className="w-32 h-4" />
+            </div>
+          </div>
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10 pb-24">
+            <div className="lg:col-span-8 space-y-12">
+              <section>
+                <Skeleton className="w-48 h-8 mb-6 rounded-xl" />
+                <Skeleton className="w-full h-48 rounded-3xl" />
+              </section>
+              <section>
+                <Skeleton className="w-48 h-8 mb-6 rounded-xl" />
+                <div className="space-y-8 pl-8">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="w-full h-24 rounded-2xl" />)}
+                </div>
+              </section>
+            </div>
+            <div className="lg:col-span-4 space-y-12">
+              <section>
+                <Skeleton className="w-48 h-8 mb-6 rounded-xl" />
+                <Skeleton className="w-full h-[400px] rounded-3xl" />
+              </section>
+            </div>
+          </div>
+        </div>
+      </main>
     );
 
     if (error || !data) return (

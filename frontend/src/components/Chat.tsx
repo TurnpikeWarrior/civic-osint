@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { getApiUrl } from '@/utils/api';
 
 type Message = {
   role: 'human' | 'assistant';
@@ -67,7 +68,7 @@ export default function Chat({
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch('http://localhost:8000/health');
+        const response = await fetch(getApiUrl('/health'));
         setIsDisconnected(!response.ok);
       } catch (err) {
         setIsDisconnected(true);
@@ -137,7 +138,7 @@ export default function Chat({
       const { data: { session } } = await createClient().auth.getSession();
       
       if (actionTrigger.type === 'member') {
-        const response = await fetch(`http://localhost:8000/conversations/member/${actionTrigger.id}?name=${encodeURIComponent(actionTrigger.name)}`, {
+        const response = await fetch(getApiUrl(`/conversations/member/${actionTrigger.id}?name=${encodeURIComponent(actionTrigger.name)}`), {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
@@ -147,7 +148,7 @@ export default function Chat({
         }
       } else if (actionTrigger.type === 'bill') {
         // Automatically track the bill when executing analysis
-        const trackRes = await fetch('http://localhost:8000/tracked-bills', {
+        const trackRes = await fetch(getApiUrl('/tracked-bills'), {
           method: 'POST',
           headers: { 
             'Authorization': `Bearer ${session?.access_token}`,
@@ -177,7 +178,7 @@ export default function Chat({
   const loadMessages = async (id: string) => {
     try {
       const { data: { session } } = await createClient().auth.getSession();
-      const response = await fetch(`http://localhost:8000/conversations/${id}/messages`, {
+      const response = await fetch(getApiUrl(`/conversations/${id}/messages`), {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
         }
@@ -216,7 +217,7 @@ export default function Chat({
       
       if (!session) throw new Error('No active session found. Please sign in again.');
 
-      const response = await fetch('http://localhost:8000/chat/stream', {
+      const response = await fetch(getApiUrl('/chat/stream'), {
         method: 'POST',
         signal: abortControllerRef.current.signal,
         headers: { 
@@ -341,7 +342,7 @@ export default function Chat({
               ✕
             </button>
             <p className="text-sm font-bold text-black leading-relaxed">
-              Hello! Need help researching? I'm here to help you stay informed!
+              Hello! Need help researching? I&apos;m here to help you stay informed!
             </p>
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white border-r-2 border-b-2 border-blue-600 rotate-45"></div>
           </div>

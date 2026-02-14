@@ -3,29 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-
-type Conversation = {
-  id: string;
-  title: string;
-  created_at: string;
-  bioguide_id?: string;
-  position: number;
-  type: 'conversation';
-};
-
-type TrackedBill = {
-  id: string; // Unified ID for dragging
-  bill_id: string;
-  bill_type: string;
-  bill_number: string;
-  congress: number;
-  title: string;
-  created_at: string;
-  position: number;
-  type: 'bill';
-};
-
-type RegistryItem = Conversation | TrackedBill;
+import { RegistryItem, Conversation, TrackedBill } from '@/types';
+import { getApiUrl } from '@/utils/api';
 
 type SidebarProps = {
   currentId: string | null;
@@ -68,7 +47,7 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
         position: index
       }));
 
-      await fetch('http://localhost:8000/registry/order', {
+      await fetch(getApiUrl('/registry/order'), {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${session?.access_token}`,
@@ -85,10 +64,10 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
     try {
       const { data: { session } } = await createClient().auth.getSession();
       const [convRes, billsRes] = await Promise.all([
-        fetch('http://localhost:8000/conversations', {
+        fetch(getApiUrl('/conversations'), {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         }),
-        fetch('http://localhost:8000/tracked-bills', {
+        fetch(getApiUrl('/tracked-bills'), {
           headers: { 'Authorization': `Bearer ${session?.access_token}` }
         })
       ]);
@@ -96,9 +75,9 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
       const convs = convRes.ok ? await convRes.json() : [];
       const bills = billsRes.ok ? await billsRes.json() : [];
 
-      let combined: RegistryItem[] = [
-        ...convs.map((c: any) => ({ ...c, type: 'conversation' })),
-        ...bills.map((b: any) => ({ ...b, type: 'bill', id: b.bill_id }))
+      const combined: RegistryItem[] = [
+        ...convs.map((c: Conversation) => ({ ...c, type: 'conversation' })),
+        ...bills.map((b: TrackedBill) => ({ ...b, type: 'bill', id: b.bill_id }))
       ];
 
       // Sort by position (ascending), then by date (descending)
@@ -121,8 +100,8 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
     try {
       const { data: { session } } = await createClient().auth.getSession();
       const url = item.type === 'conversation' 
-        ? `http://localhost:8000/conversations/${item.id}`
-        : `http://localhost:8000/tracked-bills/${(item as TrackedBill).bill_id}`;
+        ? getApiUrl(`/conversations/${item.id}`)
+        : getApiUrl(`/tracked-bills/${(item as TrackedBill).bill_id}`);
       
       const response = await fetch(url, {
         method: 'DELETE',
@@ -155,8 +134,8 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
     try {
       const { data: { session } } = await createClient().auth.getSession();
       const url = item.type === 'conversation'
-        ? `http://localhost:8000/conversations/${item.id}`
-        : `http://localhost:8000/tracked-bills/${(item as TrackedBill).bill_id}`;
+        ? getApiUrl(`/conversations/${item.id}`)
+        : getApiUrl(`/tracked-bills/${(item as TrackedBill).bill_id}`);
 
       const response = await fetch(url, {
         method: 'PATCH',

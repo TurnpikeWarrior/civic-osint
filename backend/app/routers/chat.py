@@ -88,11 +88,7 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
                         source = "Google Civic Data"
                     elif "search" in tool_name:
                         source = "Brave Web Search"
-                    yield f"
-
-*Accessing information from {source}...*
-
-"
+                    yield f"\n\n*Accessing information from {source}...*\n\n"
 
             # 4. Intel Extraction Step
             try:
@@ -101,9 +97,7 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
                 intel = await extraction_agent.ainvoke({"response": full_response})
                 
                 if intel.is_useful:
-                    packet_tag = f"
-
-[INTEL_PACKET: {intel.title} | {intel.content} |END_PACKET]"
+                    packet_tag = f"\n\n[INTEL_PACKET: {intel.title} | {intel.content} |END_PACKET]"
                     yield packet_tag
                     full_response += packet_tag
             except Exception as e:
@@ -154,8 +148,6 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
                     print(f"Chat pruning failed: {prune_err}")
 
         except Exception as e:
-            yield f"
-
-Error: {str(e)}"
+            yield f"\n\nError: {str(e)}"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream", headers={"X-Conversation-Id": conv_id})
