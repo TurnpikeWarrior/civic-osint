@@ -29,6 +29,7 @@ class Conversation(Base):
     user_id = Column(String, nullable=True) # UUID as string from Supabase
     bioguide_id = Column(String, nullable=True) # Optional link to a specific member
     created_at = Column(DateTime, default=datetime.utcnow)
+    position = Column(Integer, default=0)
     
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
 
@@ -54,6 +55,7 @@ class TrackedBill(Base):
     congress = Column(Integer)
     title = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    position = Column(Integer, default=0)
 
 class ResearchNote(Base):
     __tablename__ = "research_notes"

@@ -77,10 +77,18 @@ export default function DashboardClient({ user }: { user: User }) {
             </div>
 
             {/* Minimal Status Indicators below chat */}
-            <div className="mt-10 flex justify-center gap-12 w-full">
+            <div className="mt-10 flex flex-wrap justify-center gap-x-12 gap-y-6 w-full">
               <div className="flex flex-col items-center gap-1.5">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Source Feed</span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Legislative Source</span>
                 <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">Congress API v3</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Location Source</span>
+                <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">Google Civic Data</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Web Intel Source</span>
+                <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">Brave Search API</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Analysis Engine</span>
@@ -93,7 +101,7 @@ export default function DashboardClient({ user }: { user: User }) {
 
       <footer className="py-4 text-center bg-white border-t border-gray-100 z-10 shrink-0">
         <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.4em]">
-          Strategic Terminal &bull; Protocol v1.0.42 &bull; Secure Session
+          Powered by COSINT ENGINE
         </p>
       </footer>
     </div>

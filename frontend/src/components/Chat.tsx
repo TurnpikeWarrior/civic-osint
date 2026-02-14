@@ -36,7 +36,7 @@ export default function Chat({
   const [isOpen, setIsOpen] = useState(mode === 'centered');
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [actionTrigger, setActionTrigger] = useState<{type: 'member' | 'bill', name: string, id: string, congress?: string, billType?: string, billNumber?: string} | null>(null);
+  const [actionTrigger, setActionTrigger] = useState<{type: 'member' | 'bill', name: string, id: string, congress?: string, billType?: string, billNumber?: string, fullTitle?: string} | null>(null);
   const isStreamingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -128,25 +128,47 @@ export default function Chat({
   }, [conversationId]);
 
   const handleActionResponse = async (accept: boolean) => {
-    if (!actionTrigger) return;
+    if (!accept || !actionTrigger) {
+      setActionTrigger(null);
+      return;
+    }
     
-    if (accept) {
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      
       if (actionTrigger.type === 'member') {
-        // Create or get the member conversation
-        try {
-          const { data: { session } } = await createClient().auth.getSession();
-          const response = await fetch(`http://localhost:8000/conversations/member/${actionTrigger.id}?name=${encodeURIComponent(actionTrigger.name)}`, {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` }
-          });
-          if (response.ok) {
-            router.push(`/member/${actionTrigger.id}`);
-          }
-        } catch (err) {
-          console.error("Failed to navigate:", err);
+        const response = await fetch(`http://localhost:8000/conversations/member/${actionTrigger.id}?name=${encodeURIComponent(actionTrigger.name)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        if (response.ok) {
+          window.dispatchEvent(new Event('refresh-registry'));
+          router.push(`/member/${actionTrigger.id}`);
         }
       } else if (actionTrigger.type === 'bill') {
+        // Automatically track the bill when executing analysis
+        const trackRes = await fetch('http://localhost:8000/tracked-bills', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            bill_id: `${actionTrigger.congress}-${actionTrigger.billType}-${actionTrigger.billNumber}`.toLowerCase(),
+            bill_type: actionTrigger.billType,
+            bill_number: actionTrigger.billNumber,
+            congress: parseInt(actionTrigger.congress!),
+            title: actionTrigger.fullTitle || actionTrigger.name
+          })
+        });
+        
+        if (trackRes.ok) {
+          window.dispatchEvent(new Event('refresh-registry'));
+        }
         router.push(`/bill/${actionTrigger.congress}/${actionTrigger.billType}/${actionTrigger.billNumber}`);
       }
+    } catch (err) {
+      console.error("Action execution failed:", err);
     }
     
     setActionTrigger(null);
@@ -260,8 +282,8 @@ export default function Chat({
           });
         }
 
-        // CHECK FOR BILL ACTION TRIGGERS: Format: [RESEARCH_BILL: Congress | Type | Number]
-        const billMatch = assistantContent.match(/\[RESEARCH_BILL:\s*(\d+)\s*\|\s*([^|]+)\|\s*([^\]]+)\]/);
+        // CHECK FOR BILL ACTION TRIGGERS: Format: [RESEARCH_BILL: Congress | Type | Number | Title]
+        const billMatch = assistantContent.match(/\[RESEARCH_BILL:\s*(\d+)\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/);
         if (billMatch) {
           const bType = billMatch[2].trim().toLowerCase();
           const bNum = billMatch[3].trim();
@@ -271,7 +293,8 @@ export default function Chat({
             id: `${billMatch[1]}-${bType}-${bNum}`,
             congress: billMatch[1].trim(),
             billType: bType,
-            billNumber: bNum
+            billNumber: bNum,
+            fullTitle: billMatch[4].trim()
           });
         }
 
@@ -431,14 +454,14 @@ export default function Chat({
               </p>
             </div>
             <p className="text-sm text-gray-700 font-medium leading-relaxed">
-              Would you like to {actionTrigger.type === 'member' ? 'initialize a new' : 'open the'} <span className="font-black text-blue-700 underline">COSINT Intelligence Page</span> for <span className="font-black text-black underline decoration-blue-600 underline-offset-4">{actionTrigger.name}</span>?
+              Would you like to {actionTrigger.type === 'member' ? 'initialize a new' : 'start the'} <span className="font-black text-blue-700 underline">COSINT Intelligence Page</span> for <span className="font-black text-black underline decoration-blue-600 underline-offset-4">{actionTrigger.name}</span>?
             </p>
             <div className="flex gap-2 justify-end">
               <button 
                 onClick={() => handleActionResponse(false)}
                 className="px-4 py-2 text-[10px] font-black uppercase text-gray-500 hover:text-black transition-colors outline-none cursor-pointer"
               >
-                Negative
+                No
               </button>
               <button 
                 onClick={() => handleActionResponse(true)}

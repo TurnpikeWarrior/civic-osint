@@ -35,6 +35,14 @@ class BillTrackRequest(BaseModel):
     congress: int
     title: str
 
+class RegistryOrderItem(BaseModel):
+    id: str
+    type: str # 'conversation' or 'bill'
+    position: int
+
+class RegistryOrderUpdate(BaseModel):
+    items: List[RegistryOrderItem]
+
 # JWT Verification Logic using JWKS (Supports ES256)
 # Cache for JWKS to avoid fetching on every request
 _jwks_cache = None
@@ -126,7 +134,7 @@ async def create_conversation(user_id: str = Depends(get_current_user), db: Sess
     return {"id": str(conv.id), "title": conv.title}
 
 @app.get("/conversations/member/{bioguide_id}")
-async def get_member_conversation(bioguide_id: str, name: Optional[str] = None, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_member_conversation(bioguide_id: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     # Find existing conversation for this member
     conv = db.query(Conversation).filter(
         Conversation.user_id == user_id,
@@ -134,13 +142,21 @@ async def get_member_conversation(bioguide_id: str, name: Optional[str] = None, 
     ).first()
     
     if conv:
-        # If title is generic, update it with the name if provided
-        if name and (conv.title.startswith("Briefing:") or conv.title == "New Chat"):
-            conv.title = name
-            db.commit()
+        return {"id": str(conv.id)}
+    return {"id": None}
+
+@app.post("/conversations/member/{bioguide_id}")
+async def create_member_conversation(bioguide_id: str, name: Optional[str] = None, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Find existing first
+    conv = db.query(Conversation).filter(
+        Conversation.user_id == user_id,
+        Conversation.bioguide_id == bioguide_id
+    ).first()
+    
+    if conv:
         return {"id": str(conv.id)}
     
-    # Create new one if not exists
+    # Create new one
     new_conv = Conversation(
         title=name or f"Briefing: {bioguide_id}",
         user_id=user_id,
@@ -425,6 +441,16 @@ async def get_bill_dashboard(congress: int, bill_type: str, bill_number: str):
 async def list_tracked_bills(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     bills = db.query(TrackedBill).filter(TrackedBill.user_id == user_id).order_by(TrackedBill.created_at.desc()).all()
     return bills
+
+@app.put("/registry/order")
+async def update_registry_order(request: RegistryOrderUpdate, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    for item in request.items:
+        if item.type == 'conversation':
+            db.query(Conversation).filter(Conversation.id == item.id, Conversation.user_id == user_id).update({"position": item.position})
+        else:
+            db.query(TrackedBill).filter(TrackedBill.bill_id == item.id, TrackedBill.user_id == user_id).update({"position": item.position})
+    db.commit()
+    return {"status": "success"}
 
 @app.post("/tracked-bills")
 async def track_bill(request: BillTrackRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):

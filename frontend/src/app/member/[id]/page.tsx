@@ -28,6 +28,8 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [convId, setConvId] = useState<string | null>(null);
+  const [isTracked, setIsTracked] = useState(false);
+  const [isTracking, setIsTracking] = useState(false);
   const [researchNotes, setResearchNotes] = useState<any[]>([]);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: '', content: '' });
@@ -52,18 +54,42 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const fetchMemberConversation = async (name: string) => {
+  const fetchMemberConversation = async () => {
     try {
       const { data: { session } } = await createClient().auth.getSession();
-      const response = await fetch(`http://localhost:8000/conversations/member/${bioguideId}?name=${encodeURIComponent(name)}`, {
+      const response = await fetch(`http://localhost:8000/conversations/member/${bioguideId}`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
       if (response.ok) {
         const data = await response.json();
         setConvId(data.id);
+        setIsTracked(!!data.id);
       }
     } catch (err) {
       console.error('Failed to fetch member conversation:', err);
+    }
+  };
+
+  const handleTrackMember = async () => {
+    if (isTracked || isTracking) return;
+    setIsTracking(true);
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      const response = await fetch(`http://localhost:8000/conversations/member/${bioguideId}?name=${encodeURIComponent(data?.details?.directOrderName || '')}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setConvId(result.id);
+        setIsTracked(true);
+        // Trigger sidebar refresh
+        window.dispatchEvent(new Event('refresh-registry'));
+      }
+    } catch (err) {
+      console.error('Failed to track member:', err);
+    } finally {
+      setIsTracking(false);
     }
   };
 
@@ -237,7 +263,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
         // Fetch data and notes after user is verified
         await Promise.all([
           fetchNotes(),
-          fetchMemberConversation(result.details.directOrderName)
+          fetchMemberConversation()
         ]);
       } catch (err: any) {
         setError(err.message);
@@ -246,6 +272,10 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
       }
     }
     init();
+
+    // Sync status if deleted from sidebar
+    window.addEventListener('refresh-registry', fetchMemberConversation);
+    return () => window.removeEventListener('refresh-registry', fetchMemberConversation);
   }, [bioguideId]);
 
   const handleSelectConversation = (id: string, bId?: string) => {
@@ -331,18 +361,34 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
                   {details.directOrderName}
                 </h1>
 
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start items-center text-sm font-semibold">
-                  <a href={details.officialWebsiteUrl} target="_blank" rel="noreferrer" className="text-blue-700 hover:text-blue-900 underline focus:ring-2 focus:ring-blue-500 rounded px-1">
-                    Official Website
-                  </a>
-                  <span className="text-gray-400" aria-hidden="true">|</span>
-                  <span className="text-gray-700">
-                    HQ: {details.addressInformation?.officeAddress || 'N/A'}
-                  </span>
-                  <span className="text-gray-400" aria-hidden="true">|</span>
-                  <span className="text-gray-700">
-                    PH: {details.addressInformation?.phoneNumber || 'N/A'}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-6">
+                  <div className="flex flex-wrap gap-4 justify-center md:justify-start items-center text-sm font-semibold">
+                    <a href={details.officialWebsiteUrl} target="_blank" rel="noreferrer" className="text-blue-700 hover:text-blue-900 underline focus:ring-2 focus:ring-blue-500 rounded px-1">
+                      Official Website
+                    </a>
+                    <span className="text-gray-400" aria-hidden="true">|</span>
+                    <span className="text-gray-700">
+                      HQ: {details.addressInformation?.officeAddress || 'N/A'}
+                    </span>
+                    <span className="text-gray-400" aria-hidden="true">|</span>
+                    <span className="text-gray-700">
+                      PH: {details.addressInformation?.phoneNumber || 'N/A'}
+                    </span>
+                  </div>
+
+                  <button 
+                    onClick={handleTrackMember}
+                    disabled={isTracked || isTracking}
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 border-2 ${
+                      isTracked 
+                        ? 'bg-green-50 border-green-600 text-green-700 cursor-default' 
+                        : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                    }`}
+                  >
+                    {isTracking ? 'Processing...' : isTracked ? 'Added to Notebook' : 'Add to Notebook'}
+                    {!isTracked && !isTracking && <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>}
+                    {isTracked && <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
                 </div>
               </div>
             </div>

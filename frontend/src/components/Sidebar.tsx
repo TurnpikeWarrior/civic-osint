@@ -9,6 +9,7 @@ type Conversation = {
   title: string;
   created_at: string;
   bioguide_id?: string;
+  position: number;
   type: 'conversation';
 };
 
@@ -20,6 +21,7 @@ type TrackedBill = {
   congress: number;
   title: string;
   created_at: string;
+  position: number;
   type: 'bill';
 };
 
@@ -57,14 +59,26 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
     }
   }, [editingId]);
 
-  const saveCustomOrder = (items: RegistryItem[]) => {
-    const order = items.map(item => item.id);
-    localStorage.setItem('sidebar_order', JSON.stringify(order));
-  };
+  const saveCustomOrder = async (items: RegistryItem[]) => {
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      const orderData = items.map((item, index) => ({
+        id: item.type === 'conversation' ? item.id : (item as TrackedBill).bill_id,
+        type: item.type,
+        position: index
+      }));
 
-  const getCustomOrder = (): string[] => {
-    const saved = localStorage.getItem('sidebar_order');
-    return saved ? JSON.parse(saved) : [];
+      await fetch('http://localhost:8000/registry/order', {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ items: orderData })
+      });
+    } catch (error) {
+      console.error('Failed to save sidebar order:', error);
+    }
   };
 
   const fetchRegistry = async () => {
@@ -87,23 +101,13 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
         ...bills.map((b: any) => ({ ...b, type: 'bill', id: b.bill_id }))
       ];
 
-      // Sort by custom order if it exists, otherwise by date
-      const customOrder = getCustomOrder();
-      if (customOrder.length > 0) {
-        combined.sort((a, b) => {
-          const indexA = customOrder.indexOf(a.id);
-          const indexB = customOrder.indexOf(b.id);
-          
-          if (indexA === -1 && indexB === -1) {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          }
-          if (indexA === -1) return 1;
-          if (indexB === -1) return -1;
-          return indexA - indexB;
-        });
-      } else {
-        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      }
+      // Sort by position (ascending), then by date (descending)
+      combined.sort((a, b) => {
+        if (a.position !== b.position) {
+          return a.position - b.position;
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
       setRegistryItems(combined);
     } catch (error) {
@@ -130,11 +134,14 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
         setRegistryItems(newItems);
         saveCustomOrder(newItems);
         
-        // Notify other components (like BillDashboard) that the registry has changed
+        // Notify other components (like BillDashboard or MemberDashboard) that the registry has changed
         window.dispatchEvent(new Event('refresh-registry'));
         
-        if (item.type === 'conversation' && item.id === currentId) {
-          onNewChat();
+        // Only redirect to "New Chat" if the deleted item was a general inquiry (not a pinned member/bill)
+        if (item.id === currentId) {
+          if (item.type === 'conversation' && !item.bioguide_id) {
+            onNewChat();
+          }
         }
         setConfirmDeleteId(null);
       }
@@ -216,9 +223,9 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-gray-800">
-        <div className="flex justify-between items-center px-4 mb-4 mt-2">
-          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">
-            Notebook Registry
+        <div className="flex justify-center items-center px-4 mb-4 mt-2">
+          <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">
+            My Notebook
           </h3>
         </div>
         
