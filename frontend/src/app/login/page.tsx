@@ -79,7 +79,7 @@ export default function LoginPage() {
               <div className="space-y-4">
                 <button
                   onClick={() => handleOAuthLogin('google')}
-                  className="w-full flex items-center justify-center gap-4 px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl text-black font-black uppercase tracking-widest text-xs hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm active:scale-95"
+                  className="w-full flex items-center justify-center gap-4 px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl text-black font-black uppercase tracking-widest text-xs hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm active:scale-95 cursor-pointer"
                   aria-label="Continue with Google authentication"
                 >
                   <img src="https://www.google.com/favicon.ico" alt="" className="w-5 h-5" aria-hidden="true" />
@@ -88,7 +88,7 @@ export default function LoginPage() {
 
                 <button
                   onClick={() => handleOAuthLogin('github')}
-                  className="w-full flex items-center justify-center gap-4 px-6 py-4 bg-[#171717] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-xl active:scale-95"
+                  className="w-full flex items-center justify-center gap-4 px-6 py-4 bg-[#171717] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-xl active:scale-95 cursor-pointer"
                   aria-label="Continue with GitHub authentication"
                 >
                   <img src="https://github.com/favicon.ico" alt="" className="w-5 h-5 invert" aria-hidden="true" />
