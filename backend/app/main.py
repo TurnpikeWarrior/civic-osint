@@ -28,6 +28,13 @@ class NoteCreate(BaseModel):
 class ConversationUpdate(BaseModel):
     title: str
 
+class BillTrackRequest(BaseModel):
+    bill_id: str
+    bill_type: str
+    bill_number: str
+    congress: int
+    title: str
+
 # JWT Verification Logic using JWKS (Supports ES256)
 # Cache for JWKS to avoid fetching on every request
 _jwks_cache = None
@@ -362,6 +369,7 @@ async def get_member_dashboard(bioguide_id: str):
 @app.get("/bill/{congress}/{bill_type}/{bill_number}")
 async def get_bill_dashboard(congress: int, bill_type: str, bill_number: str):
     from .services.cosint.api_client import CongressAPIClient
+    from .services.cosint.agent import get_bill_analysis_agent
     client = CongressAPIClient()
     try:
         # Sanitize bill_type (e.g., 'h.r.' -> 'hr')
@@ -372,11 +380,25 @@ async def get_bill_dashboard(congress: int, bill_type: str, bill_number: str):
         cosponsors = client.get_bill_cosponsors(congress, sanitized_type, bill_number)
         text_versions = client.get_bill_text(congress, sanitized_type, bill_number)
         
+        # 1. Fetch raw text content
+        raw_text = client.get_bill_text_content(congress, sanitized_type, bill_number)
+        
+        # 2. Run Analysis Agent
+        ai_summary = None
+        if raw_text:
+            try:
+                analysis_agent = get_bill_analysis_agent()
+                result = await analysis_agent.ainvoke({"bill_text": raw_text})
+                ai_summary = result.content
+            except Exception as e:
+                print(f"AI Bill Analysis failed: {e}")
+
         return {
             "details": details,
             "actions": actions,
             "cosponsors": cosponsors,
-            "text": text_versions
+            "text": text_versions,
+            "ai_summary": ai_summary
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -385,6 +407,44 @@ async def get_bill_dashboard(congress: int, bill_type: str, bill_number: str):
 async def list_tracked_bills(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     bills = db.query(TrackedBill).filter(TrackedBill.user_id == user_id).order_by(TrackedBill.created_at.desc()).all()
     return bills
+
+@app.post("/tracked-bills")
+async def track_bill(request: BillTrackRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Check if already tracked
+    existing = db.query(TrackedBill).filter(
+        TrackedBill.user_id == user_id,
+        TrackedBill.bill_id == request.bill_id
+    ).first()
+    
+    if existing:
+        return existing
+        
+    new_track = TrackedBill(
+        user_id=user_id,
+        bill_id=request.bill_id,
+        bill_type=request.bill_type,
+        bill_number=request.bill_number,
+        congress=request.congress,
+        title=request.title
+    )
+    db.add(new_track)
+    db.commit()
+    db.refresh(new_track)
+    return new_track
+
+@app.patch("/tracked-bills/{bill_id}")
+async def update_tracked_bill(bill_id: str, update: NoteUpdate, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    # NoteUpdate has 'title' which we can reuse for renaming the bill title
+    bill = db.query(TrackedBill).filter(TrackedBill.bill_id == bill_id, TrackedBill.user_id == user_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Tracked bill not found")
+    
+    if update.title is not None:
+        bill.title = update.title
+    
+    db.commit()
+    db.refresh(bill)
+    return bill
 
 @app.delete("/tracked-bills/{bill_id}")
 async def untrack_bill(bill_id: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):

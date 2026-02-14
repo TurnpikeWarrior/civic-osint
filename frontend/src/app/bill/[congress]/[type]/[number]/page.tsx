@@ -16,6 +16,7 @@ type BillData = {
   actions: any[];
   cosponsors: any[];
   text: any[];
+  ai_summary?: string;
 };
 
 export default function BillDashboard({ params }: { params: Promise<{ congress: string, type: string, number: string }> }) {
@@ -29,6 +30,24 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [convId, setConvId] = useState<string | null>(null);
+  const [isTracked, setIsTracked] = useState(false);
+  const [isTracking, setIsTracking] = useState(false);
+
+  const fetchTrackingStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('http://localhost:8000/tracked-bills', {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (response.ok) {
+        const bills = await response.json();
+        const billId = `${congress}-${type}-${number}`.toLowerCase();
+        setIsTracked(bills.some((b: any) => b.bill_id === billId));
+      }
+    } catch (err) {
+      console.error('Failed to fetch tracking status:', err);
+    }
+  };
 
   useEffect(() => {
     async function init() {
@@ -42,6 +61,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
         if (!response.ok) throw new Error('Failed to fetch bill intelligence');
         const result = await response.json();
         setData(result);
+        await fetchTrackingStatus();
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -50,6 +70,37 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
     }
     init();
   }, [congress, type, number]);
+
+  const handleTrackBill = async () => {
+    if (isTracked || isTracking) return;
+    setIsTracking(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('http://localhost:8000/tracked-bills', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          bill_id: `${congress}-${type}-${number}`.toLowerCase(),
+          bill_type: type,
+          bill_number: number,
+          congress: parseInt(congress),
+          title: data?.details?.title || 'Unknown Bill'
+        })
+      });
+      if (response.ok) {
+        setIsTracked(true);
+        // Trigger sidebar refresh
+        window.dispatchEvent(new Event('refresh-registry'));
+      }
+    } catch (err) {
+      console.error('Failed to track bill:', err);
+    } finally {
+      setIsTracking(false);
+    }
+  };
 
   const handleSelectConversation = (id: string, bioguideId?: string) => {
     if (bioguideId) {
@@ -111,8 +162,8 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
                 {details.title}
               </h1>
 
-              <div className="flex flex-wrap items-center justify-between gap-6">
-                <div className="flex flex-wrap gap-6 items-center text-sm font-semibold text-gray-600">
+              <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+                <div className="flex flex-wrap gap-x-6 gap-y-2 items-center text-sm font-semibold text-gray-600">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black uppercase text-gray-400">Sponsor</span>
                     <Link href={`/member/${details.sponsors?.[0]?.bioguideId}`} className="text-blue-700 hover:text-blue-900 font-bold underline decoration-2 underline-offset-4">
@@ -125,15 +176,31 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
                   </div>
                 </div>
 
-                <a 
-                  href={`https://www.congress.gov/bill/${congress}th-congress/${type.toLowerCase()}/${number}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-all shadow-sm active:scale-95"
-                >
-                  Link to Official Page
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                </a>
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={handleTrackBill}
+                    disabled={isTracked || isTracking}
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 border-2 ${
+                      isTracked 
+                        ? 'bg-green-50 border-green-600 text-green-700 cursor-default' 
+                        : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isTracking ? 'Processing...' : isTracked ? 'Added to Notebook' : 'Add to Notebook'}
+                    {!isTracked && !isTracking && <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>}
+                    {isTracked && <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+
+                  <a 
+                    href={`https://www.congress.gov/bill/${congress}th-congress/${type.toLowerCase()}/${number}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-all shadow-sm active:scale-95"
+                  >
+                    Link to Official Page
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -150,7 +217,11 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
                   <div className="absolute top-0 left-0 w-2 h-full bg-blue-700"></div>
                   <div className="prose prose-sm max-w-none text-gray-800 font-medium leading-relaxed">
                     <p className="text-lg font-bold text-black mb-4">Summary provided by COSINT Intelligence Engine:</p>
-                    {details.summary?.text ? (
+                    {data.ai_summary ? (
+                      <div className="animate-in fade-in slide-in-from-top-4 duration-700">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.ai_summary}</ReactMarkdown>
+                      </div>
+                    ) : details.summary?.text ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{details.summary.text}</ReactMarkdown>
                     ) : (
                       <p className="italic opacity-70">Official summary is currently being indexed. Ask the AI terminal for a live analysis of the bill text.</p>
@@ -228,18 +299,6 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-8 bg-black text-white rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-                  <div className="relative z-10">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4 text-blue-400">Intelligence Protocol</h3>
-                    <p className="text-sm font-medium leading-relaxed opacity-90">
-                      Use the AI terminal to analyze specific amendments, floor speeches, or committee reports related to this bill.
-                    </p>
-                  </div>
-                  <div className="absolute -bottom-6 -right-6 text-6xl font-black text-white/5 select-none">
-                    INTEL
-                  </div>
-                </div>
               </section>
             </div>
           </div>
@@ -254,7 +313,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
       
       <div className="flex-1 flex overflow-hidden">
         <Sidebar 
-          currentId={null} 
+          currentId={`${congress}-${type}-${number}`.toLowerCase()} 
           onSelect={handleSelectConversation}
           onNewChat={handleNewChat}
         />

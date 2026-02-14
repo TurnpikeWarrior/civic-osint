@@ -293,3 +293,24 @@ def get_intel_extraction_agent():
     ])
     
     return prompt | structured_llm
+
+def get_bill_analysis_agent():
+    """
+    An agent specialized in reading raw legislative text and providing
+    an executive 'plain English' summary for non-lawyers.
+    """
+    llm = ChatOpenAI(model="gpt-4o", temperature=0) # Use gpt-4o for better reasoning on legal text
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a Senior Legislative Analyst. Your job is to read the raw text of a Congressional bill and provide a high-precision 'Plain English' summary. "
+                   "CRITICAL INSTRUCTIONS:\n"
+                   "- Avoid legal jargon.\n"
+                   "- Explain the core intent of the bill in 2-3 concise paragraphs.\n"
+                   "- Use bullet points to highlight the 3 most significant impacts or changes this bill proposes.\n"
+                   "- Identify the primary stakeholders (who benefits, who is regulated).\n"
+                   "- Maintain a strictly neutral, objective tone.\n"
+                   "- If the text is a 'short title' or placeholder, explain that the full text is not yet available for deep analysis."),
+        ("human", "Analyze and summarize this bill text:\n\n{bill_text}")
+    ])
+    
+    return prompt | llm

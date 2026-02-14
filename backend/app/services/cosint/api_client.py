@@ -76,6 +76,47 @@ class CongressAPIClient:
         data = self._get(f"bill/{congress}/{bill_type.lower()}/{bill_number}/text")
         return data.get("textVersions", [])
 
+    def get_bill_text_content(self, congress: int, bill_type: str, bill_number: str) -> Optional[str]:
+        """
+        Fetches the actual text content of the latest bill version.
+        Attempts to get the Formatted XML or Text version and clean it.
+        """
+        versions = self.get_bill_text(congress, bill_type, bill_number)
+        if not versions:
+            return None
+            
+        # Get latest version
+        latest = versions[0]
+        formats = latest.get("formats", [])
+        
+        # Prefer XML/Text formats for easier parsing
+        target_format = next((f for f in formats if f.get("type") in ["Formatted XML", "Formatted Text", "Text"]), None)
+        if not target_format:
+            # Fallback to any format with a URL
+            target_format = formats[0] if formats else None
+            
+        if not target_format or not target_format.get("url"):
+            return None
+            
+        try:
+            # Note: Congress API URLs often require the API key as a param even for direct text links
+            response = requests.get(target_format["url"], params={"api_key": self.api_key})
+            response.raise_for_status()
+            
+            # Simple cleanup of HTML/XML tags
+            import re
+            text = response.text
+            # Remove XML/HTML tags
+            clean_text = re.sub(r'<[^>]+>', ' ', text)
+            # Normalize whitespace
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            
+            # Truncate if extremely long to avoid LLM token limits (e.g., first 15k chars)
+            return clean_text[:15000]
+        except Exception as e:
+            print(f"Failed to fetch bill text content: {e}")
+            return None
+
     def get_bill_actions(self, congress: int, bill_type: str, bill_number: str, limit: int = 100) -> List[Dict[str, Any]]:
         """
         Fetch actions taken on a specific bill.
