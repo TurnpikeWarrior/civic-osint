@@ -14,6 +14,8 @@ import { MemberData } from '@/types';
 import { getApiUrl } from '@/utils/api';
 import { Skeleton, MemberHeaderSkeleton, CardSkeleton, VoteCardSkeleton } from '@/components/Skeleton';
 
+export const dynamic = 'force-dynamic';
+
 export default function MemberDashboard({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const bioguideId = resolvedParams.id;

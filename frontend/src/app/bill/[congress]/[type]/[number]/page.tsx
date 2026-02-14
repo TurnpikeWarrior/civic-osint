@@ -14,6 +14,8 @@ import { BillData } from '@/types';
 import { getApiUrl } from '@/utils/api';
 import { Skeleton, CardSkeleton } from '@/components/Skeleton';
 
+export const dynamic = 'force-dynamic';
+
 export default function BillDashboard({ params }: { params: Promise<{ congress: string, type: string, number: string }> }) {
   const resolvedParams = use(params);
   const { congress, type, number } = resolvedParams;
