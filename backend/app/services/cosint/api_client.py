@@ -2,6 +2,7 @@ import os
 import requests
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
+from ..cache_service import api_cache
 
 load_dotenv()
 
@@ -23,6 +24,7 @@ class CongressAPIClient:
         response.raise_for_status()
         return response.json()
 
+    @api_cache(expire=3600)
     def get_members(self, current_member: bool = True, limit: int = 20, state: Optional[str] = None, district: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Fetch a list of members. Uses path-based filtering for state and district if provided.
@@ -40,6 +42,7 @@ class CongressAPIClient:
         data = self._get(endpoint, params=params)
         return data.get("members", [])
 
+    @api_cache(expire=86400)
     def get_member_details(self, bioguide_id: str) -> Dict[str, Any]:
         """
         Fetch details for a specific member by their Bioguide ID.
@@ -47,6 +50,7 @@ class CongressAPIClient:
         data = self._get(f"member/{bioguide_id}")
         return data.get("member", {})
 
+    @api_cache(expire=86400)
     def get_member_committees(self, bioguide_id: str) -> List[Dict[str, Any]]:
         """
         Fetch committee assignments for a specific member.
@@ -54,6 +58,7 @@ class CongressAPIClient:
         data = self._get(f"member/{bioguide_id}/committees")
         return data.get("committees", [])
 
+    @api_cache(expire=86400)
     def get_sponsored_legislation(self, bioguide_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Fetch legislation sponsored by a specific member.
@@ -62,6 +67,7 @@ class CongressAPIClient:
         data = self._get(f"member/{bioguide_id}/sponsored-legislation", params=params)
         return data.get("sponsoredLegislation", [])
 
+    @api_cache(expire=86400)
     def get_bill_details(self, congress: int, bill_type: str, bill_number: str) -> Dict[str, Any]:
         """
         Fetch details for a specific bill.
@@ -69,6 +75,7 @@ class CongressAPIClient:
         data = self._get(f"bill/{congress}/{bill_type.lower()}/{bill_number}")
         return data.get("bill", {})
 
+    @api_cache(expire=86400)
     def get_bill_text(self, congress: int, bill_type: str, bill_number: str) -> List[Dict[str, Any]]:
         """
         Fetch text versions for a specific bill.
@@ -76,6 +83,7 @@ class CongressAPIClient:
         data = self._get(f"bill/{congress}/{bill_type.lower()}/{bill_number}/text")
         return data.get("textVersions", [])
 
+    @api_cache(expire=86400)
     def get_bill_text_content(self, congress: int, bill_type: str, bill_number: str) -> Optional[str]:
         """
         Fetches the actual text content of the latest bill version.
@@ -117,6 +125,7 @@ class CongressAPIClient:
             print(f"Failed to fetch bill text content: {e}")
             return None
 
+    @api_cache(expire=86400)
     def get_bill_actions(self, congress: int, bill_type: str, bill_number: str, limit: int = 100) -> List[Dict[str, Any]]:
         """
         Fetch actions taken on a specific bill.
@@ -125,6 +134,7 @@ class CongressAPIClient:
         data = self._get(f"bill/{congress}/{bill_type.lower()}/{bill_number}/actions", params=params)
         return data.get("actions", [])
 
+    @api_cache(expire=86400)
     def get_bill_cosponsors(self, congress: int, bill_type: str, bill_number: str) -> List[Dict[str, Any]]:
         """
         Fetch cosponsors for a specific bill.
