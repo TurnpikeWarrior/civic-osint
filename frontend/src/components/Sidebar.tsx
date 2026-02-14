@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { RegistryItem, Conversation, TrackedBill } from '@/types';
+import { RegistryItem, RegistryConversation, RegistryTrackedBill } from '@/types';
 import { getApiUrl } from '@/utils/api';
 
 type SidebarProps = {
@@ -76,8 +76,8 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
       const bills = billsRes.ok ? await billsRes.json() : [];
 
       const combined: RegistryItem[] = [
-        ...convs.map((c: Conversation) => ({ ...c, type: 'conversation' })),
-        ...bills.map((b: TrackedBill) => ({ ...b, type: 'bill', id: b.bill_id }))
+        ...convs.map((c: RegistryConversation) => ({ ...c, type: 'conversation' })),
+        ...bills.map((b: RegistryTrackedBill) => ({ ...b, type: 'bill', id: b.bill_id }))
       ];
 
       // Sort by position (ascending), then by date (descending)
@@ -101,7 +101,7 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
       const { data: { session } } = await createClient().auth.getSession();
       const url = item.type === 'conversation' 
         ? getApiUrl(`/conversations/${item.id}`)
-        : getApiUrl(`/tracked-bills/${(item as TrackedBill).bill_id}`);
+        : getApiUrl(`/tracked-bills/${(item as RegistryTrackedBill).bill_id}`);
       
       const response = await fetch(url, {
         method: 'DELETE',
@@ -135,7 +135,7 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
       const { data: { session } } = await createClient().auth.getSession();
       const url = item.type === 'conversation'
         ? getApiUrl(`/conversations/${item.id}`)
-        : getApiUrl(`/tracked-bills/${(item as TrackedBill).bill_id}`);
+        : getApiUrl(`/tracked-bills/${(item as RegistryTrackedBill).bill_id}`);
 
       const response = await fetch(url, {
         method: 'PATCH',
@@ -157,7 +157,7 @@ export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps
     }
   };
 
-  const startEditing = (e: React.MouseEvent, item: RegistryItem) => {
+  const startEditing = (e: React.MouseEvent, item: RegistryConversation) => {
     e.stopPropagation();
     setEditingId(item.id);
     setEditFormTitle(item.title);
