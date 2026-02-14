@@ -28,8 +28,8 @@ export default function LoginPage() {
       {/* Public Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center font-black text-white text-xl shadow-inner" aria-hidden="true">
-            C
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-inner border border-gray-100" aria-hidden="true">
+            <img src="/assets/logo.png" alt="" className="w-full h-full object-cover" />
           </div>
           <span className="text-lg font-extrabold tracking-tight text-black uppercase tracking-wider">
             COSINT

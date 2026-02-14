@@ -13,8 +13,8 @@ export default function Header({ user, onSignOut }: HeaderProps) {
     <header className="relative z-50 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm shrink-0">
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xl shadow-inner">
-            C
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-inner border border-gray-100">
+            <img src="/assets/logo.png" alt="COSINT Logo" className="w-full h-full object-cover" />
           </div>
           <span className="text-lg font-extrabold tracking-tight text-black">
             Welcome to <span className="text-blue-600">COSINT</span>
