@@ -1,30 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 
 type Conversation = {
   id: string;
   title: string;
   created_at: string;
+  bioguide_id?: string;
 };
 
 type SidebarProps = {
   currentId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, bioguideId?: string) => void;
   onNewChat: () => void;
-  user: User;
-  onSignOut: () => void;
 };
 
-export default function Sidebar({ currentId, onSelect, onNewChat, user, onSignOut }: SidebarProps) {
+export default function Sidebar({ currentId, onSelect, onNewChat }: SidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchConversations();
-  }, [currentId, user.id]);
+  }, [currentId]);
 
   const fetchConversations = async () => {
     try {
@@ -46,23 +44,7 @@ export default function Sidebar({ currentId, onSelect, onNewChat, user, onSignOu
   };
 
   return (
-    <nav className="w-64 h-screen bg-gray-900 text-white flex flex-col border-r border-gray-800 shadow-2xl" aria-label="Conversation History">
-      <div className="p-4 border-b border-gray-800 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-sm shadow-inner" aria-hidden="true">
-          {user.email?.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1 truncate">
-          <p className="text-xs font-black truncate uppercase tracking-tighter text-blue-100">{user.email}</p>
-          <button 
-            onClick={onSignOut}
-            className="text-[10px] text-gray-400 hover:text-red-400 focus:text-red-400 transition-colors uppercase font-black tracking-widest outline-none"
-            aria-label="Sign out of your account"
-          >
-            Terminal Logout
-          </button>
-        </div>
-      </div>
-
+    <nav className="w-64 h-full bg-gray-900 text-white flex flex-col border-r border-gray-800 shadow-2xl" aria-label="Conversation History">
       <div className="p-4">
         <button
           onClick={onNewChat}
@@ -85,7 +67,7 @@ export default function Sidebar({ currentId, onSelect, onNewChat, user, onSignOu
             conversations.map((conv) => (
               <button
                 key={conv.id}
-                onClick={() => onSelect(conv.id)}
+                onClick={() => onSelect(conv.id, conv.bioguide_id)}
                 className={`w-full text-left px-4 py-3 text-xs rounded-xl truncate transition-all outline-none ${
                   currentId === conv.id
                     ? 'bg-blue-600 text-white font-black shadow-md border-l-4 border-blue-400'

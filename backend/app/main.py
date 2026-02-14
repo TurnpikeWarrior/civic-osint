@@ -117,7 +117,7 @@ async def create_conversation(user_id: str = Depends(get_current_user), db: Sess
     return {"id": str(conv.id), "title": conv.title}
 
 @app.get("/conversations/member/{bioguide_id}")
-async def get_member_conversation(bioguide_id: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_member_conversation(bioguide_id: str, name: Optional[str] = None, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     # Find existing conversation for this member
     conv = db.query(Conversation).filter(
         Conversation.user_id == user_id,
@@ -129,7 +129,7 @@ async def get_member_conversation(bioguide_id: str, user_id: str = Depends(get_c
     
     # Create new one if not exists
     new_conv = Conversation(
-        title=f"Briefing: {bioguide_id}",
+        title=name or f"Briefing: {bioguide_id}",
         user_id=user_id,
         bioguide_id=bioguide_id
     )
@@ -141,7 +141,7 @@ async def get_member_conversation(bioguide_id: str, user_id: str = Depends(get_c
 @app.get("/conversations")
 async def list_conversations(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     conversations = db.query(Conversation).filter(Conversation.user_id == user_id).order_by(Conversation.created_at.desc()).all()
-    return [{"id": str(c.id), "title": c.title, "created_at": c.created_at} for c in conversations]
+    return [{"id": str(c.id), "title": c.title, "created_at": c.created_at, "bioguide_id": c.bioguide_id} for c in conversations]
 
 @app.get("/conversations/{conversation_id}/messages")
 async def get_messages(conversation_id: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
