@@ -20,7 +20,6 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   const resolvedParams = use(params);
   const bioguideId = resolvedParams.id;
   const router = useRouter();
-  const supabase = createClient();
   
   const [user, setUser] = useState<User | null>(null);
   const [data, setData] = useState<MemberData | null>(null);
@@ -40,7 +39,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
 
   const fetchNotes = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       const response = await fetch(getApiUrl(`/member/${bioguideId}/notes`), {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -294,7 +293,7 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     router.push('/login');
   };
 

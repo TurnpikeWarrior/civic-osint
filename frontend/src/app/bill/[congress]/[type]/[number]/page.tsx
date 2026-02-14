@@ -20,7 +20,6 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
   const resolvedParams = use(params);
   const { congress, type, number } = resolvedParams;
   const router = useRouter();
-  const supabase = createClient();
   
   const [user, setUser] = useState<User | null>(null);
   const [data, setData] = useState<BillData | null>(null);
@@ -32,7 +31,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
 
   const fetchTrackingStatus = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       const response = await fetch(getApiUrl('/tracked-bills'), {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       });
@@ -48,7 +47,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
 
   useEffect(() => {
     async function init() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await createClient().auth.getUser();
       if (!user) return router.push('/login');
       setUser(user);
       
@@ -76,7 +75,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
     if (isTracked || isTracking) return;
     setIsTracking(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createClient().auth.getSession();
       const response = await fetch(getApiUrl('/tracked-bills'), {
         method: 'POST',
         headers: { 
@@ -116,7 +115,7 @@ export default function BillDashboard({ params }: { params: Promise<{ congress: 
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     router.push('/login');
   };
 

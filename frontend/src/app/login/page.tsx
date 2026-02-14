@@ -7,9 +7,9 @@ export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
