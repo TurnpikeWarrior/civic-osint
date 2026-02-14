@@ -306,6 +306,19 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
                 
                 save_db.commit()
 
+                # 6. PRUNING LOGIC: Keep only last 10 messages for this conversation
+                try:
+                    limit = 10
+                    # Find messages to delete
+                    all_msgs = save_db.query(Message).filter(Message.conversation_id == conv_id).order_by(Message.created_at.desc()).all()
+                    if len(all_msgs) > limit:
+                        msgs_to_delete = all_msgs[limit:]
+                        for m in msgs_to_delete:
+                            save_db.delete(m)
+                        save_db.commit()
+                except Exception as prune_err:
+                    print(f"Chat pruning failed: {prune_err}")
+
         except Exception as e:
             yield f"\n\nError: {str(e)}"
 
