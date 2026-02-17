@@ -12,13 +12,13 @@ COSINT (Civic Open Source Intelligence) is an AI-powered research tool for U.S. 
 
 **API Data Sources**: Congress, Google Civic Information, Brave Search 
 
-There are:
-U.S. Congress Total: 535 
-U.S. Senate: 100 
-U.S. House of Representatives: 535
-Federal Legislation Bills Introduced (2025): 11,800 - 12,400 
-Federal Legislation Bills Enacted (2025): 274 - 308
-State Legislations Introduced (2025): 135,500+ 
+There are:  
+U.S. Congress Total: 535  
+U.S. Senate: 100  
+U.S. House of Representatives: 535  
+Federal Legislation Bills Introduced (2025): 11,800 - 12,400  
+Federal Legislation Bills Enacted (2025): 274 - 308  
+State Legislations Introduced (2025): 135,500+  
 
 Do you know any of them? Stay Informed with COSINT! 
 
