@@ -3,12 +3,12 @@
 COSINT (Civic Open Source Intelligence) is an AI-powered research tool for U.S. Congress. It gives everyday citizens the ability to look up their representatives track legislation, and undersatnd what's happening in Congress - all through a conversational chat interface. 
 
 ## What COSINT can do? 
-- Find your representatives
-- Research any member of Congress
-- Read bills in Plain English 
-- Track legislation 
-- AI-powered chat
-- Research notebook 
+- **Find Your Representatives** - Enter your address and instantly see your House rep and Senators
+- **Research any member of Congress** - Look up voting records, sponsored bills, committee assignments, and biographical details for any current representative or senator
+- **Read Bills in Plain English** - The app fetches raw legislative text and generates plain-language summaries to understand what's being voted on
+- **Track Legislation** - Save and follow specific bills in your personal notebook with a drag-and-drop sidebar
+- **AI-Powered Chat** - Ask natural language questions like "How did my senator vote on the latest defense bill?"
+- **Research Notebook** - You can create and pin information to your note
 
 **API Data Sources**: Congress, Google Civic Information, Brave Search 
 
