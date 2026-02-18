@@ -29,8 +29,8 @@ Do you know any of them? Stay Informed with COSINT!
 
 ## Technical Stuff
 
-- `backend/`: FastAPI server with LangChain agent and Congress API integration.
-- `frontend/`: Next.js web application with a modern chat interface.
+- `backend/`: FastAPI server with LangChain agent and Congress API integration hosted in Render and Supabase.
+- `frontend/`: Next.js web application with a modern chat interface hosted in Vercel.
 
 ## Quick Start
 
