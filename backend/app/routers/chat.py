@@ -95,23 +95,39 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
                 from ..services.cosint.agent import get_intel_extraction_agent
                 extraction_agent = get_intel_extraction_agent()
 
-                # Build relevance filter context so extraction only captures intel about the member being viewed
-                if request.bioguide_id and request.initial_context:
-                    member_context = (
-                        f"The user is currently on the page for a SPECIFIC member ({request.initial_context}). "
-                        f"ONLY extract facts that are directly about THIS member (Bioguide ID: {request.bioguide_id}). "
-                        f"If the response discusses a DIFFERENT Congress member who is NOT this person, set is_useful to false. "
-                        f"Do NOT save intel about other members to this member's Research Notebook."
-                    )
-                else:
-                    member_context = "No specific member context. Extract any relevant Congressional intel."
+                intel = await extraction_agent.ainvoke({"response": full_response})
 
-                intel = await extraction_agent.ainvoke({"response": full_response, "member_context": member_context})
-                
                 if intel.is_useful:
-                    packet_tag = f"\n\n[INTEL_PACKET: {intel.title} | {intel.content} |END_PACKET]"
-                    yield packet_tag
-                    full_response += packet_tag
+                    # Hard relevance gate: if we're on a specific member's page,
+                    # only allow intel that is actually about that member
+                    if request.bioguide_id and request.initial_context:
+                        # Extract the member name from the initial_context
+                        # Format: "The user is currently viewing the profile of NAME (Bioguide ID: ...)"
+                        import re as re_mod
+                        name_match = re_mod.search(r"profile of (.+?) \(Bioguide", request.initial_context)
+                        if name_match:
+                            page_member_name = name_match.group(1).strip().lower()
+                            intel_subject = intel.subject_name.strip().lower()
+
+                            # Check if the intel subject matches the page member
+                            # Use substring matching to handle partial names (e.g., "Booker" vs "Cory Booker")
+                            page_name_parts = page_member_name.split()
+                            subject_parts = intel_subject.split()
+
+                            is_relevant = (
+                                intel_subject in page_member_name or
+                                page_member_name in intel_subject or
+                                any(part in subject_parts for part in page_name_parts if len(part) > 2)
+                            )
+
+                            if not is_relevant:
+                                print(f"Intel filtered: subject '{intel.subject_name}' doesn't match page member '{page_member_name}'")
+                                intel = None
+
+                    if intel:
+                        packet_tag = f"\n\n[INTEL_PACKET: {intel.title} | {intel.content} |END_PACKET]"
+                        yield packet_tag
+                        full_response += packet_tag
             except Exception as e:
                 print(f"Intel extraction failed: {e}")
 

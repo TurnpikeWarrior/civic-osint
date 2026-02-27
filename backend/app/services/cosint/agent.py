@@ -272,6 +272,7 @@ class IntelPacket(BaseModel):
     title: str = Field(description="Short category title (e.g., 'Legal Record', 'Senate Term')")
     content: str = Field(description="Extremely concise summarized fact or key-value pair. No full sentences.")
     is_useful: bool = Field(description="Whether this information is significant enough to be pinned")
+    subject_name: str = Field(description="The full name of the Congress member this fact is ABOUT (the person described in the fact, not the page context)")
 
 def get_intel_extraction_agent():
     """
@@ -289,7 +290,8 @@ def get_intel_extraction_agent():
                    "If the response contains a relevant link (e.g., to a speech, a video, or an official document), ALWAYS include it in the content using Markdown format: [Source Name](URL). "
                    "Example: 'Senate Term: Jan 2025 - Jan 2031' or 'Inauguration Speech: [Read here](URL)'. "
                    "If the response is vague, lacks a specific new fact about the member, or is just conversational, set is_useful to false.\n\n"
-                   "RELEVANCE FILTER: {member_context}"),
+                   "IMPORTANT: In the 'subject_name' field, write the full name of the person or topic the extracted fact is PRIMARILY about. "
+                   "For example, if the response is about Mike Johnson being Speaker of the House, subject_name should be 'Mike Johnson', NOT whoever's page the user is on."),
         ("human", "Extract the key fact from this response: {response}")
     ])
 
