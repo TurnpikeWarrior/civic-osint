@@ -244,7 +244,7 @@ def get_cosint_agent(streaming: bool = False):
                    "- Use 'get_congress_member_details' to get full info once you have a Bioguide ID. "
                    "- Use 'get_member_recent_votes' to see how a House representative voted on recent bills. "
                    "- Use 'summarize_congressional_bill' if a user asks for a summary or explanation of a specific bill (HR 1, etc.). "
-                   "- Use 'web_search' ONLY as a fallback if official Congress or Civic data is unavailable, or to look up very recent news/scandals/biographical details not in official records. "
+                   "- Use 'web_search' to supplement Congress.gov data with up-to-date information. ALWAYS use web_search alongside official tools when answering 'Who is...', biographical questions, or questions about a member's current role/status — Congress.gov data can lag behind real-world changes (e.g., a member moving from House to Senate). Also use it for recent news, scandals, or biographical details not in official records. "
                    "If you cannot find a member, explain why or suggest alternative names. "
                    "\n\nFormatting Guidelines:\n"
                    "- Always provide clickable links using Markdown [Link Text](URL).\n"
