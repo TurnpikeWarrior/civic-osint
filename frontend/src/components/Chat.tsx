@@ -279,11 +279,15 @@ export default function Chat({
         // CHECK FOR ACTION TRIGGERS: Format: [CREATE_PAGE_ACTION: Name | ID]
         const memberMatch = assistantContent.match(/\[CREATE_PAGE_ACTION:\s*([^|]+)\|\s*([^\]]+)\]/);
         if (memberMatch) {
-          setActionTrigger({
-            type: 'member',
-            name: memberMatch[1].trim(),
-            id: memberMatch[2].trim()
-          });
+          const matchedId = memberMatch[2].trim();
+          // Don't prompt to create a page for the member we're already viewing
+          if (!bioguideId || matchedId.toLowerCase() !== bioguideId.toLowerCase()) {
+            setActionTrigger({
+              type: 'member',
+              name: memberMatch[1].trim(),
+              id: matchedId
+            });
+          }
         }
 
         // CHECK FOR BILL ACTION TRIGGERS: Format: [RESEARCH_BILL: Congress | Type | Number | Title]
