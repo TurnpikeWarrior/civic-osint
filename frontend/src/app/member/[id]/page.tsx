@@ -598,12 +598,13 @@ export default function MemberDashboard({ params }: { params: Promise<{ id: stri
 
       {/* Floating AI Terminal */}
       {data && user && (
-        <Chat 
+        <Chat
           mode="floating"
           conversationId={convId}
           onIdGenerated={setConvId}
           user={user}
           initialContext={`The user is currently viewing the profile of ${data.details.directOrderName} (Bioguide ID: ${bioguideId}). Use this Bioguide ID directly for tools if needed.`}
+          bioguideId={bioguideId}
           onIntelligenceCaptured={captureIntel}
         />
       )}

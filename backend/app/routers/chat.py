@@ -94,7 +94,19 @@ async def chat_stream_endpoint(request: ChatRequest, user_id: str = Depends(get_
             try:
                 from ..services.cosint.agent import get_intel_extraction_agent
                 extraction_agent = get_intel_extraction_agent()
-                intel = await extraction_agent.ainvoke({"response": full_response})
+
+                # Build relevance filter context so extraction only captures intel about the member being viewed
+                if request.bioguide_id and request.initial_context:
+                    member_context = (
+                        f"The user is currently on the page for a SPECIFIC member ({request.initial_context}). "
+                        f"ONLY extract facts that are directly about THIS member (Bioguide ID: {request.bioguide_id}). "
+                        f"If the response discusses a DIFFERENT Congress member who is NOT this person, set is_useful to false. "
+                        f"Do NOT save intel about other members to this member's Research Notebook."
+                    )
+                else:
+                    member_context = "No specific member context. Extract any relevant Congressional intel."
+
+                intel = await extraction_agent.ainvoke({"response": full_response, "member_context": member_context})
                 
                 if intel.is_useful:
                     packet_tag = f"\n\n[INTEL_PACKET: {intel.title} | {intel.content} |END_PACKET]"

@@ -280,7 +280,7 @@ def get_intel_extraction_agent():
     """
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     structured_llm = llm.with_structured_output(IntelPacket)
-    
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are an OSINT Intelligence Analyst. Your job is to extract specific facts from the AI response about a Congressional representative or legislative activity. "
                    "If the response contains a significant, new fact (district details, committee roles, career milestones, specific votes, or important links), set is_useful to true. "
@@ -288,10 +288,11 @@ def get_intel_extraction_agent():
                    "CRITICAL: The 'content' must be EXTREMELY CONCISE. Use a 'Label: Value' format. "
                    "If the response contains a relevant link (e.g., to a speech, a video, or an official document), ALWAYS include it in the content using Markdown format: [Source Name](URL). "
                    "Example: 'Senate Term: Jan 2025 - Jan 2031' or 'Inauguration Speech: [Read here](URL)'. "
-                   "If the response is vague, lacks a specific new fact about the member, or is just conversational, set is_useful to false."),
+                   "If the response is vague, lacks a specific new fact about the member, or is just conversational, set is_useful to false.\n\n"
+                   "RELEVANCE FILTER: {member_context}"),
         ("human", "Extract the key fact from this response: {response}")
     ])
-    
+
     return prompt | structured_llm
 
 def get_bill_analysis_agent():

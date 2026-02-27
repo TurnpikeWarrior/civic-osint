@@ -20,16 +20,18 @@ type ChatProps = {
   user: User;
   mode?: 'centered' | 'floating';
   initialContext?: string;
+  bioguideId?: string;
   onIntelligenceCaptured?: (intel: {title: string, content: string}) => void;
 };
 
-export default function Chat({ 
-  conversationId, 
-  onIdGenerated, 
-  user, 
-  mode = 'centered', 
+export default function Chat({
+  conversationId,
+  onIdGenerated,
+  user,
+  mode = 'centered',
   initialContext,
-  onIntelligenceCaptured 
+  bioguideId,
+  onIntelligenceCaptured
 }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -228,6 +230,7 @@ export default function Chat({
           message: input,
           conversation_id: conversationId,
           initial_context: initialContext,
+          bioguide_id: bioguideId,
         }),
       });
 
