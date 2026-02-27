@@ -99,6 +99,14 @@ async def delete_conversation(conversation_id: str, user_id: str = Depends(get_c
     conv = db.query(Conversation).filter(Conversation.id == conversation_id, Conversation.user_id == user_id).first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Also delete research notes linked to this member
+    if conv.bioguide_id:
+        db.query(ResearchNote).filter(
+            ResearchNote.user_id == user_id,
+            ResearchNote.bioguide_id == conv.bioguide_id
+        ).delete()
+
     db.delete(conv)
     db.commit()
     return {"status": "success"}
