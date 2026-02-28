@@ -91,7 +91,7 @@ export default function DashboardClient({ user }: { user: User }) {
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Analysis Engine</span>
-                <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">GPT-4o-mini</span>
+                <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">GPT-4.1-mini</span>
               </div>
             </div>
           </div>
