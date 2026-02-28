@@ -38,6 +38,12 @@ async def get_model_info():
     from .services.cosint.agent import COSINT_AGENT_MODEL
     return {"model": COSINT_AGENT_MODEL}
 
+@app.post("/system/clear-cache")
+async def clear_cache():
+    from .services.cache_service import cache
+    cache.clear()
+    return {"status": "cache cleared"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
