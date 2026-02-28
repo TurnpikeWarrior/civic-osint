@@ -163,16 +163,77 @@ class CongressAPIClient:
                 return mv.get("voteCast")
         return None
 
+    # Common nickname → official name mappings for Congress members
+    NICKNAME_MAP = {
+        "bernie": "bernard",
+        "bob": "robert",
+        "bill": "william",
+        "jim": "james",
+        "joe": "joseph",
+        "mike": "michael",
+        "dick": "richard",
+        "rick": "richard",
+        "ted": "edward",
+        "ted": "rafael",
+        "tom": "thomas",
+        "chuck": "charles",
+        "dan": "daniel",
+        "dave": "david",
+        "jerry": "gerald",
+        "tony": "anthony",
+        "steve": "stephen",
+        "al": "alexander",
+        "pat": "patrick",
+        "andy": "andrew",
+        "chris": "christopher",
+        "matt": "matthew",
+        "tim": "timothy",
+        "ben": "benjamin",
+        "ken": "kenneth",
+        "ron": "ronald",
+        "don": "donald",
+        "larry": "lawrence",
+        "jack": "john",
+        "pete": "peter",
+        "nick": "nicholas",
+        "will": "william",
+        "greg": "gregory",
+        "ed": "edward",
+        "rob": "robert",
+        "sam": "samuel",
+        "liz": "elizabeth",
+        "beth": "elizabeth",
+    }
+
     def search_member_by_name(self, name: str) -> Optional[Dict[str, Any]]:
         """
-        A helper to find a member by name. 
+        A helper to find a member by name.
         Splits the search query into parts and ensures all parts are present in the member name.
+        Also handles common nicknames (e.g., Bernie -> Bernard).
         """
         members = self.get_members(limit=250)
         search_parts = name.lower().split()
-        
+
+        # Try exact match first
         for m in members:
             member_name_lower = m.get("name", "").lower()
             if all(part in member_name_lower for part in search_parts):
                 return m
+
+        # Try with nickname expansion: for each search part, accept either the original or its nickname variant
+        has_nicknames = any(part in self.NICKNAME_MAP for part in search_parts)
+        if has_nicknames:
+            for m in members:
+                member_name_lower = m.get("name", "").lower()
+                match = True
+                for part in search_parts:
+                    variants = [part]
+                    if part in self.NICKNAME_MAP:
+                        variants.append(self.NICKNAME_MAP[part])
+                    if not any(v in member_name_lower for v in variants):
+                        match = False
+                        break
+                if match:
+                    return m
+
         return None

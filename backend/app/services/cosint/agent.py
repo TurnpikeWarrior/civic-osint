@@ -1,4 +1,5 @@
 import os
+import asyncio
 from typing import Type
 from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
@@ -10,6 +11,12 @@ from dotenv import load_dotenv
 from .api_client import CongressAPIClient
 from ..google_civic_client import GoogleCivicClient
 from ..brave_search_client import BraveSearchClient
+
+
+class AsyncCompatTool(BaseTool):
+    """Base tool that wraps sync _run in asyncio.to_thread to prevent blocking the event loop."""
+    async def _arun(self, *args, **kwargs):
+        return await asyncio.to_thread(self._run, *args, **kwargs)
 
 load_dotenv()
 
@@ -24,7 +31,7 @@ class MemberDetailsInput(BaseModel):
 class MemberStateSearchInput(BaseModel):
     state_code: str = Field(description="The 2-letter state code (e.g., 'NJ', 'NY', 'CA')")
 
-class MemberSearchTool(BaseTool):
+class MemberSearchTool(AsyncCompatTool):
     name: str = "search_congress_member_by_name"
     description: str = "Search for a Congress member by name to get their Bioguide ID and basic info"
     args_schema: Type[BaseModel] = MemberSearchInput
@@ -36,7 +43,7 @@ class MemberSearchTool(BaseTool):
             return member
         return f"No member found with name: {name}"
 
-class MemberStateSearchTool(BaseTool):
+class MemberStateSearchTool(AsyncCompatTool):
     name: str = "search_congress_members_by_state"
     description: str = "Get a list of Congress members representing a specific state using its 2-letter code"
     args_schema: Type[BaseModel] = MemberStateSearchInput
@@ -49,7 +56,7 @@ class MemberStateSearchTool(BaseTool):
             return [{"name": m.get("name"), "bioguideId": m.get("bioguideId"), "party": m.get("partyName")} for m in members]
         return f"No members found for state: {state_code}"
 
-class MemberDetailsTool(BaseTool):
+class MemberDetailsTool(AsyncCompatTool):
     name: str = "get_congress_member_details"
     description: str = "Get detailed information about a Congress member using their Bioguide ID"
     args_schema: Type[BaseModel] = MemberDetailsInput
@@ -61,7 +68,7 @@ class MemberDetailsTool(BaseTool):
             return details
         return f"No details found for Bioguide ID: {bioguide_id}"
 
-class MemberLegislationTool(BaseTool):
+class MemberLegislationTool(AsyncCompatTool):
     name: str = "get_member_sponsored_legislation"
     description: str = "Get a list of legislation sponsored by a Congress member using their Bioguide ID"
     args_schema: Type[BaseModel] = MemberDetailsInput
@@ -73,7 +80,7 @@ class MemberLegislationTool(BaseTool):
             return legislation
         return f"No sponsored legislation found for Bioguide ID: {bioguide_id}"
 
-class MemberCommitteesTool(BaseTool):
+class MemberCommitteesTool(AsyncCompatTool):
     name: str = "get_member_committees"
     description: str = "Get the committee assignments for a Congress member using their Bioguide ID"
     args_schema: Type[BaseModel] = MemberDetailsInput
@@ -88,7 +95,7 @@ class MemberCommitteesTool(BaseTool):
         except Exception as e:
             return f"Error fetching committees: {str(e)}"
 
-class MemberVotesTool(BaseTool):
+class MemberVotesTool(AsyncCompatTool):
     name: str = "get_member_recent_votes"
     description: str = "Get the most recent House roll call votes for a representative using their Bioguide ID"
     args_schema: Type[BaseModel] = MemberDetailsInput
@@ -135,7 +142,7 @@ class BillSearchInput(BaseModel):
     bill_type: str = Field(description="The type of bill (e.g., 'hr', 's', 'hres')")
     bill_number: str = Field(description="The bill number (e.g., '1')")
 
-class GoogleCivicTool(BaseTool):
+class GoogleCivicTool(AsyncCompatTool):
     name: str = "get_representatives_by_address"
     description: str = "Find your Congressional district and representatives for a specific address or location"
     args_schema: Type[BaseModel] = CivicInfoInput
@@ -212,7 +219,7 @@ class BraveSearchTool(BaseTool):
             print(f"[BraveSearch] ASYNC ERROR for '{query}': {type(e).__name__}: {str(e)}")
             return f"Web search error for '{query}': {str(e)}"
 
-class SummarizeBillTool(BaseTool):
+class SummarizeBillTool(AsyncCompatTool):
     name: str = "summarize_congressional_bill"
     description: str = "Fetch the text of a specific bill and provide a summary. Useful for complex legislation."
     args_schema: Type[BaseModel] = BillSearchInput
