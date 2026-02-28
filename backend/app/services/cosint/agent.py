@@ -222,7 +222,7 @@ def get_cosint_agent(streaming: bool = False):
     from datetime import datetime
     current_date = datetime.now().strftime("%A, %B %d, %Y")
     
-    llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0, streaming=streaming)
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, streaming=streaming)
     tools = [
         MemberSearchTool(), 
         MemberStateSearchTool(), 
@@ -283,7 +283,7 @@ def get_intel_extraction_agent():
     A specialized agent responsible for analyzing chat messages and extracting
     modular information for the Research Notebook with extreme conciseness.
     """
-    llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     structured_llm = llm.with_structured_output(IntelPacket)
 
     prompt = ChatPromptTemplate.from_messages([
