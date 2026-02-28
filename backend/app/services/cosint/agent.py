@@ -186,12 +186,30 @@ class BraveSearchTool(BaseTool):
 
     def _run(self, query: str):
         try:
+            print(f"[BraveSearch] Executing sync search for: '{query}'")
             data = self.client.search(query)
             results = self.client.format_search_results(data)
             if results and "No web search results found" not in results:
+                print(f"[BraveSearch] Success - got results for: '{query}'")
                 return f"[Web search successful for: '{query}']\n{results}"
+            print(f"[BraveSearch] No results for: '{query}'")
             return f"Web search returned no results for: '{query}'"
         except Exception as e:
+            print(f"[BraveSearch] SYNC ERROR for '{query}': {type(e).__name__}: {str(e)}")
+            return f"Web search error for '{query}': {str(e)}"
+
+    async def _arun(self, query: str):
+        try:
+            print(f"[BraveSearch] Executing async search for: '{query}'")
+            data = await self.client.async_search(query)
+            results = self.client.format_search_results(data)
+            if results and "No web search results found" not in results:
+                print(f"[BraveSearch] Async success - got results for: '{query}'")
+                return f"[Web search successful for: '{query}']\n{results}"
+            print(f"[BraveSearch] Async no results for: '{query}'")
+            return f"Web search returned no results for: '{query}'"
+        except Exception as e:
+            print(f"[BraveSearch] ASYNC ERROR for '{query}': {type(e).__name__}: {str(e)}")
             return f"Web search error for '{query}': {str(e)}"
 
 class SummarizeBillTool(BaseTool):
