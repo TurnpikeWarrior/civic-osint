@@ -185,9 +185,12 @@ class BraveSearchTool(BaseTool):
     def _run(self, query: str):
         try:
             data = self.client.search(query)
-            return self.client.format_search_results(data)
+            results = self.client.format_search_results(data)
+            if results and "No web search results found" not in results:
+                return f"[Web search successful for: '{query}']\n{results}"
+            return f"Web search returned no results for: '{query}'"
         except Exception as e:
-            return f"Error performing web search: {str(e)}"
+            return f"Web search error for '{query}': {str(e)}"
 
 class SummarizeBillTool(BaseTool):
     name: str = "summarize_congressional_bill"
@@ -246,6 +249,7 @@ def get_cosint_agent(streaming: bool = False):
                    "- Use 'summarize_congressional_bill' if a user asks for a summary or explanation of a specific bill (HR 1, etc.). "
                    "- Use 'web_search' to supplement Congress.gov data with up-to-date information. ALWAYS use web_search alongside official tools when answering 'Who is...', biographical questions, or questions about a member's current role/status — Congress.gov data can lag behind real-world changes (e.g., a member moving from House to Senate). Also use it for recent news, scandals, or biographical details not in official records. "
                    "If you cannot find a member, explain why or suggest alternative names. "
+                   "IMPORTANT: When you call a tool and receive results, ALWAYS use and present the data from the tool response. Never claim you are 'unable to access' a tool if it returned data. Trust tool results as factual and current. "
                    "\n\nFormatting Guidelines:\n"
                    "- Always provide clickable links using Markdown [Link Text](URL).\n"
                    "- For more information about a specific Congress member, use this exact phrasing: 'For more information, you can [visit his/her official profile](https://www.congress.gov/member/BIOGUIDE_ID) or create a new COSINT page.' (Replace BIOGUIDE_ID with their actual ID).\n"
