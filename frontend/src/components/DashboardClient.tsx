@@ -7,14 +7,23 @@ import Sidebar from '@/components/Sidebar';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getApiUrl } from '@/utils/api';
 
 export default function DashboardClient({ user }: { user: User }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionParam = searchParams.get('session');
-  
+
   // Use state but sync it with sessionParam when it changes
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [modelName, setModelName] = useState<string>('...');
+
+  useEffect(() => {
+    fetch(getApiUrl('/system/model'))
+      .then(res => res.json())
+      .then(data => setModelName(data.model || 'Unknown'))
+      .catch(() => setModelName('Unknown'));
+  }, []);
   
   // Derived or combined ID
   const currentConversationId = sessionParam || selectedId;
@@ -91,7 +100,7 @@ export default function DashboardClient({ user }: { user: User }) {
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Analysis Engine</span>
-                <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">GPT-4o-mini</span>
+                <span className="text-xs font-bold text-black border-b-2 border-blue-600 pb-0.5">{modelName}</span>
               </div>
             </div>
           </div>
